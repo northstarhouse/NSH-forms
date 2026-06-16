@@ -38,7 +38,7 @@ function NotFound() {
   return (
     <div className="min-h-screen bg-[#faf8f4] flex flex-col items-center justify-center gap-4">
       <p className="text-2xl font-light text-[#2c2418]" style={SERIF}>Not found</p>
-      <p className="text-sm text-[#9e8b6f] font-light" style={SANS}>This link may have been removed or is incorrect.</p>
+      <p className="text-sm text-[#9e8b6f] font-semibold" style={SANS}>This link may have been removed or is incorrect.</p>
     </div>
   )
 }
@@ -105,7 +105,7 @@ function EventPage({ id }) {
         <p className="text-xs uppercase tracking-widest text-[#886c44] mb-4 font-light" style={SANS}>Event</p>
         <h1 className="text-5xl font-light mb-4 text-[#2c2418]" style={SERIF}>{event.title}</h1>
         {(event.date || event.time) && (
-          <p className="text-base text-[#886c44] mb-3 font-light" style={SANS}>{event.date}{event.date && event.time ? ' at ' : ''}{event.time}</p>
+          <p className="text-base text-[#886c44] mb-3 font-semibold" style={SANS}>{event.date}{event.date && event.time ? ' at ' : ''}{event.time}</p>
         )}
         {event.description && (
           <p className="text-base text-[#2c2418] mb-12 leading-relaxed max-w-2xl font-light" style={SANS}>{event.description}</p>
@@ -118,7 +118,7 @@ function EventPage({ id }) {
           </div>
         ) : (
           <div className="mb-12 space-y-4">
-            <p className="text-sm text-[#9e8b6f] font-light" style={SANS}>Enter your name to RSVP</p>
+            <p className="text-sm text-[#9e8b6f] font-semibold" style={SANS}>Enter your name to RSVP</p>
             <NameInput value={name} onChange={setName} />
             <div className="flex gap-3 flex-wrap">
               <button onClick={() => handleRSVP('yes')} disabled={!name.trim()} className="px-6 py-3 bg-[#886c44] text-white rounded text-sm font-light hover:bg-[#6d5436] transition disabled:opacity-40 disabled:cursor-not-allowed" style={SANS}>I'm Coming</button>
@@ -205,7 +205,7 @@ function PollPage({ id }) {
           </div>
         ) : (
           <div className="mb-12 space-y-4">
-            <p className="text-sm text-[#9e8b6f] font-light" style={SANS}>Enter your name to vote</p>
+            <p className="text-sm text-[#9e8b6f] font-semibold" style={SANS}>Enter your name to vote</p>
             <NameInput value={name} onChange={setName} />
             <div className="space-y-3 mt-4">
               {poll.options.map((option, idx) => (
@@ -315,8 +315,8 @@ function ShiftPage({ id }) {
           {(shift.date || shift.time) && (
             <p className="text-base text-[#2c2418] font-light" style={SANS}>{shift.date}{shift.date && shift.time ? ' at ' : ''}{shift.time}</p>
           )}
-          {shift.duration && <p className="text-sm text-[#9e8b6f] font-light" style={SANS}>Duration: {shift.duration}</p>}
-          {shift.role && <p className="text-sm text-[#9e8b6f] font-light" style={SANS}>Role: {shift.role}</p>}
+          {shift.duration && <p className="text-sm text-[#9e8b6f] font-semibold" style={SANS}>Duration: {shift.duration}</p>}
+          {shift.role && <p className="text-sm text-[#9e8b6f] font-semibold" style={SANS}>Role: {shift.role}</p>}
           {spotsLeft !== null && (
             <p className={`text-sm font-light ${full ? 'text-red-500' : 'text-[#886c44]'}`} style={SANS}>
               {full ? 'This shift is full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} remaining`}
@@ -331,7 +331,7 @@ function ShiftPage({ id }) {
           </div>
         ) : !full ? (
           <div className="mb-12 space-y-4">
-            <p className="text-sm text-[#9e8b6f] font-light" style={SANS}>Enter your name to sign up</p>
+            <p className="text-sm text-[#9e8b6f] font-semibold" style={SANS}>Enter your name to sign up</p>
             <NameInput value={name} onChange={setName} />
             <button
               onClick={handleSignup}
@@ -368,6 +368,7 @@ function AdminDashboard() {
   const [polls, setPolls] = useState([])
   const [shifts, setShifts] = useState([])
   const [copiedId, setCopiedId] = useState(null)
+  const [active, setActive] = useState(null) // 'event' | 'poll' | 'shift' | null
 
   const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', description: '' })
   const [pollForm, setPollForm] = useState({ question: '', options: ['', ''] })
@@ -438,112 +439,130 @@ function AdminDashboard() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
+  const toggle = (key) => setActive(prev => prev === key ? null : key)
   const count = (item, key) => item[`vol_${key}`]?.[0]?.count ?? 0
 
+  const TILES = [
+    { key: 'event', label: 'Events', sub: `${events.length} created` },
+    { key: 'poll',  label: 'Polls',  sub: `${polls.length} created` },
+    { key: 'shift', label: 'Volunteer Shifts', sub: `${shifts.length} created` },
+  ]
+
   return (
-    <div className="min-h-screen bg-[#faf8f4]" style={SANS}>
+    <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
       <TopBar />
-      <div className="max-w-5xl mx-auto px-6 py-12">
-        <h2 className="text-4xl font-light mb-2 text-[#2c2418]" style={SERIF}>Create & Manage</h2>
-        <p className="text-sm text-[#9e8b6f] font-light mb-12" style={SANS}>Create items below, then copy the shareable link to send to volunteers.</p>
 
-        {/* ── Events ── */}
-        <section className="mb-16">
-          <h3 className="text-2xl font-light mb-6 text-[#2c2418]" style={SERIF}>Events</h3>
-          <div className="bg-white p-8 rounded border border-[#e8e4dc] mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <input placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className={INPUT_CLS} style={SANS} />
-              <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className={INPUT_CLS} style={SANS} />
-              <input type="time" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT_CLS} style={SANS} />
-            </div>
-            <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT_CLS} mb-4`} rows={3} style={SANS} />
-            <button onClick={createEvent} disabled={saving === 'event'} className="px-6 py-3 bg-[#886c44] text-white rounded text-sm font-light hover:bg-[#6d5436] transition disabled:opacity-60" style={SANS}>
-              {saving === 'event' ? 'Saving…' : 'Add Event'}
+      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full px-6 py-12">
+        <h2 className="text-4xl font-light mb-1 text-[#2c2418]" style={SERIF}>Volunteer Hub</h2>
+        <p className="text-sm text-[#9e8b6f] font-light mb-10" style={SANS}>Select a category to create or manage.</p>
+
+        {/* Tile buttons */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {TILES.map(({ key, label, sub }) => (
+            <button
+              key={key}
+              onClick={() => toggle(key)}
+              className={`p-6 rounded border text-left transition ${
+                active === key
+                  ? 'bg-[#886c44] border-[#886c44] text-white'
+                  : 'bg-white border-[#e8e4dc] text-[#2c2418] hover:border-[#886c44]'
+              }`}
+            >
+              <p className="text-lg font-light mb-1" style={SERIF}>{label}</p>
+              <p className={`text-xs font-light ${active === key ? 'text-[#f0e6d8]' : 'text-[#9e8b6f]'}`} style={SANS}>{sub}</p>
             </button>
-          </div>
-          <div className="space-y-3">
-            {events.map(e => (
-              <AdminCard
-                key={e.id}
-                title={e.title}
-                subtitle={[e.date, e.time].filter(Boolean).join(' at ')}
-                meta={`${count(e, 'event_responses')} response${count(e, 'event_responses') !== 1 ? 's' : ''}`}
-                copied={copiedId === e.id}
-                onCopy={() => copyLink('event', e.id)}
-                onDelete={() => deleteEvent(e.id)}
-              />
-            ))}
-          </div>
-        </section>
+          ))}
+        </div>
 
-        {/* ── Polls ── */}
-        <section className="mb-16">
-          <h3 className="text-2xl font-light mb-6 text-[#2c2418]" style={SERIF}>Polls</h3>
-          <div className="bg-white p-8 rounded border border-[#e8e4dc] mb-6">
-            <input placeholder="Poll question" value={pollForm.question} onChange={e => setPollForm({ ...pollForm, question: e.target.value })} className={`${INPUT_CLS} mb-4`} style={SANS} />
-            <div className="space-y-3 mb-4">
-              {pollForm.options.map((opt, i) => (
-                <input key={i} placeholder={`Option ${i + 1}`} value={opt} onChange={e => { const o = [...pollForm.options]; o[i] = e.target.value; setPollForm({ ...pollForm, options: o }) }} className={INPUT_CLS} style={SANS} />
+        {/* ── Events panel ── */}
+        {active === 'event' && (
+          <div className="animate-in">
+            <div className="bg-white p-8 rounded border border-[#e8e4dc] mb-4">
+              <p className="text-xs uppercase tracking-widest text-[#9e8b6f] mb-5 font-light" style={SANS}>New Event</p>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <input placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className={`${INPUT_CLS} col-span-2`} style={SANS} />
+                <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className={INPUT_CLS} style={SANS} />
+                <input type="time" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT_CLS} style={SANS} />
+              </div>
+              <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT_CLS} mb-4`} rows={2} style={SANS} />
+              <button onClick={createEvent} disabled={saving === 'event'} className="px-6 py-3 bg-[#886c44] text-white rounded text-sm font-light hover:bg-[#6d5436] transition disabled:opacity-60" style={SANS}>
+                {saving === 'event' ? 'Saving…' : 'Add Event'}
+              </button>
+            </div>
+            <div className="space-y-2">
+              {events.length === 0 && <p className="text-sm text-[#9e8b6f] font-light py-2" style={SANS}>No events yet.</p>}
+              {events.map(e => (
+                <AdminCard key={e.id} title={e.title} subtitle={[e.date, e.time].filter(Boolean).join(' at ')}
+                  meta={`${count(e, 'event_responses')} response${count(e, 'event_responses') !== 1 ? 's' : ''}`}
+                  copied={copiedId === e.id} onCopy={() => copyLink('event', e.id)} onDelete={() => deleteEvent(e.id)} />
               ))}
             </div>
-            <div className="flex items-center gap-4 mb-6">
-              <button onClick={() => setPollForm({ ...pollForm, options: [...pollForm.options, ''] })} className="text-sm text-[#886c44] font-light hover:text-[#6d5436] transition" style={SANS}>+ Add Option</button>
-              {pollForm.options.length > 2 && (
-                <button onClick={() => setPollForm({ ...pollForm, options: pollForm.options.slice(0, -1) })} className="text-sm text-[#9e8b6f] font-light hover:text-[#2c2418] transition" style={SANS}>− Remove last</button>
-              )}
-            </div>
-            <button onClick={createPoll} disabled={saving === 'poll'} className="px-6 py-3 bg-[#886c44] text-white rounded text-sm font-light hover:bg-[#6d5436] transition disabled:opacity-60" style={SANS}>
-              {saving === 'poll' ? 'Saving…' : 'Create Poll'}
-            </button>
           </div>
-          <div className="space-y-3">
-            {polls.map(p => (
-              <AdminCard
-                key={p.id}
-                title={p.question}
-                meta={`${count(p, 'poll_votes')} vote${count(p, 'poll_votes') !== 1 ? 's' : ''}`}
-                copied={copiedId === p.id}
-                onCopy={() => copyLink('poll', p.id)}
-                onDelete={() => deletePoll(p.id)}
-              />
-            ))}
-          </div>
-        </section>
+        )}
 
-        {/* ── Shifts ── */}
-        <section className="mb-16">
-          <h3 className="text-2xl font-light mb-6 text-[#2c2418]" style={SERIF}>Volunteer Shifts</h3>
-          <div className="bg-white p-8 rounded border border-[#e8e4dc] mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <input placeholder="Shift title" value={shiftForm.title} onChange={e => setShiftForm({ ...shiftForm, title: e.target.value })} className={INPUT_CLS} style={SANS} />
-              <input type="date" value={shiftForm.date} onChange={e => setShiftForm({ ...shiftForm, date: e.target.value })} className={INPUT_CLS} style={SANS} />
-              <input type="time" value={shiftForm.time} onChange={e => setShiftForm({ ...shiftForm, time: e.target.value })} className={INPUT_CLS} style={SANS} />
-              <input placeholder="Duration (e.g. 2 hours)" value={shiftForm.duration} onChange={e => setShiftForm({ ...shiftForm, duration: e.target.value })} className={INPUT_CLS} style={SANS} />
-              <input placeholder="Role (e.g. Docent)" value={shiftForm.role} onChange={e => setShiftForm({ ...shiftForm, role: e.target.value })} className={INPUT_CLS} style={SANS} />
-              <input type="number" placeholder="Available spots" value={shiftForm.spots} onChange={e => setShiftForm({ ...shiftForm, spots: e.target.value })} className={INPUT_CLS} style={SANS} />
+        {/* ── Polls panel ── */}
+        {active === 'poll' && (
+          <div className="animate-in">
+            <div className="bg-white p-8 rounded border border-[#e8e4dc] mb-4">
+              <p className="text-xs uppercase tracking-widest text-[#9e8b6f] mb-5 font-light" style={SANS}>New Poll</p>
+              <input placeholder="Poll question" value={pollForm.question} onChange={e => setPollForm({ ...pollForm, question: e.target.value })} className={`${INPUT_CLS} mb-4`} style={SANS} />
+              <div className="space-y-3 mb-3">
+                {pollForm.options.map((opt, i) => (
+                  <input key={i} placeholder={`Option ${i + 1}`} value={opt} onChange={e => { const o = [...pollForm.options]; o[i] = e.target.value; setPollForm({ ...pollForm, options: o }) }} className={INPUT_CLS} style={SANS} />
+                ))}
+              </div>
+              <div className="flex items-center gap-4 mb-5">
+                <button onClick={() => setPollForm({ ...pollForm, options: [...pollForm.options, ''] })} className="text-sm text-[#886c44] font-light hover:text-[#6d5436] transition" style={SANS}>+ Add option</button>
+                {pollForm.options.length > 2 && (
+                  <button onClick={() => setPollForm({ ...pollForm, options: pollForm.options.slice(0, -1) })} className="text-sm text-[#9e8b6f] font-light hover:text-[#2c2418] transition" style={SANS}>− Remove last</button>
+                )}
+              </div>
+              <button onClick={createPoll} disabled={saving === 'poll'} className="px-6 py-3 bg-[#886c44] text-white rounded text-sm font-light hover:bg-[#6d5436] transition disabled:opacity-60" style={SANS}>
+                {saving === 'poll' ? 'Saving…' : 'Create Poll'}
+              </button>
             </div>
-            <button onClick={createShift} disabled={saving === 'shift'} className="px-6 py-3 bg-[#886c44] text-white rounded text-sm font-light hover:bg-[#6d5436] transition disabled:opacity-60" style={SANS}>
-              {saving === 'shift' ? 'Saving…' : 'Add Shift'}
-            </button>
+            <div className="space-y-2">
+              {polls.length === 0 && <p className="text-sm text-[#9e8b6f] font-light py-2" style={SANS}>No polls yet.</p>}
+              {polls.map(p => (
+                <AdminCard key={p.id} title={p.question}
+                  meta={`${count(p, 'poll_votes')} vote${count(p, 'poll_votes') !== 1 ? 's' : ''}`}
+                  copied={copiedId === p.id} onCopy={() => copyLink('poll', p.id)} onDelete={() => deletePoll(p.id)} />
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
-            {shifts.map(s => (
-              <AdminCard
-                key={s.id}
-                title={s.title}
-                subtitle={[s.date, s.time].filter(Boolean).join(' at ')}
-                meta={`${count(s, 'shift_signups')} signed up${s.spots ? ` of ${s.spots}` : ''}`}
-                copied={copiedId === s.id}
-                onCopy={() => copyLink('shift', s.id)}
-                onDelete={() => deleteShift(s.id)}
-              />
-            ))}
+        )}
+
+        {/* ── Shifts panel ── */}
+        {active === 'shift' && (
+          <div className="animate-in">
+            <div className="bg-white p-8 rounded border border-[#e8e4dc] mb-4">
+              <p className="text-xs uppercase tracking-widest text-[#9e8b6f] mb-5 font-light" style={SANS}>New Shift</p>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <input placeholder="Shift title" value={shiftForm.title} onChange={e => setShiftForm({ ...shiftForm, title: e.target.value })} className={`${INPUT_CLS} col-span-2`} style={SANS} />
+                <input type="date" value={shiftForm.date} onChange={e => setShiftForm({ ...shiftForm, date: e.target.value })} className={INPUT_CLS} style={SANS} />
+                <input type="time" value={shiftForm.time} onChange={e => setShiftForm({ ...shiftForm, time: e.target.value })} className={INPUT_CLS} style={SANS} />
+                <input placeholder="Duration (e.g. 2 hours)" value={shiftForm.duration} onChange={e => setShiftForm({ ...shiftForm, duration: e.target.value })} className={INPUT_CLS} style={SANS} />
+                <input placeholder="Role (e.g. Docent)" value={shiftForm.role} onChange={e => setShiftForm({ ...shiftForm, role: e.target.value })} className={INPUT_CLS} style={SANS} />
+                <input type="number" placeholder="Available spots" value={shiftForm.spots} onChange={e => setShiftForm({ ...shiftForm, spots: e.target.value })} className={`${INPUT_CLS} col-span-2`} style={SANS} />
+              </div>
+              <button onClick={createShift} disabled={saving === 'shift'} className="px-6 py-3 bg-[#886c44] text-white rounded text-sm font-light hover:bg-[#6d5436] transition disabled:opacity-60" style={SANS}>
+                {saving === 'shift' ? 'Saving…' : 'Add Shift'}
+              </button>
+            </div>
+            <div className="space-y-2">
+              {shifts.length === 0 && <p className="text-sm text-[#9e8b6f] font-light py-2" style={SANS}>No shifts yet.</p>}
+              {shifts.map(s => (
+                <AdminCard key={s.id} title={s.title} subtitle={[s.date, s.time].filter(Boolean).join(' at ')}
+                  meta={`${count(s, 'shift_signups')} signed up${s.spots ? ` of ${s.spots}` : ''}`}
+                  copied={copiedId === s.id} onCopy={() => copyLink('shift', s.id)} onDelete={() => deleteShift(s.id)} />
+              ))}
+            </div>
           </div>
-        </section>
+        )}
       </div>
 
       <footer className="bg-white border-t border-[#e8e4dc]">
-        <div className="max-w-5xl mx-auto px-6 py-8 text-center">
+        <div className="max-w-5xl mx-auto px-6 py-6 text-center">
           <p className="text-xs text-[#9e8b6f] font-light" style={SANS}>North Star House • Grass Valley, CA • (530) 273-4667</p>
         </div>
       </footer>
@@ -556,8 +575,8 @@ function AdminCard({ title, subtitle, meta, copied, onCopy, onDelete }) {
     <div className="flex justify-between items-center p-5 bg-white border border-[#e8e4dc] rounded hover:border-[#c9b48a] transition">
       <div className="flex-1 min-w-0 mr-4">
         <p className="font-light text-[#2c2418] truncate" style={{ ...SERIF, fontSize: '17px' }}>{title}</p>
-        {subtitle && <p className="text-xs text-[#9e8b6f] font-light mt-0.5" style={SANS}>{subtitle}</p>}
-        {meta && <p className="text-xs text-[#9e8b6f] font-light mt-1" style={SANS}>{meta}</p>}
+        {subtitle && <p className="text-xs text-[#9e8b6f] font-semibold mt-0.5" style={SANS}>{subtitle}</p>}
+        {meta && <p className="text-xs text-[#9e8b6f] font-semibold mt-1" style={SANS}>{meta}</p>}
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <button onClick={onCopy} className="flex items-center gap-1.5 px-3 py-2 rounded hover:bg-[#f0e6d8] transition text-xs font-light" style={{ ...SANS, color: copied ? '#886c44' : '#9e8b6f' }}>
