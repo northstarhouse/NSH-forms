@@ -111,7 +111,7 @@ function EventPage({ id }) {
   if (!event) return <NotFound />
 
   const isShift = event.event_type === 'shift'
-  const counts = { yes: 0, maybe: 0, no: 0 }
+  const counts = { yes: 0, plus1: 0, no: 0 }
   responses.forEach(r => { if (counts[r.response] !== undefined) counts[r.response]++ })
 
   return (
@@ -146,23 +146,23 @@ function EventPage({ id }) {
                 <p className="text-base text-[#2c2418] font-bold">Enter your name to RSVP:</p>
                 <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className={`${INPUT} max-w-sm`} style={SANS} />
                 <div className="flex gap-3 flex-wrap pt-1">
-                  <button onClick={() => handleRSVP('yes')} disabled={!name.trim()} className="px-8 py-4 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-40">I'm Coming</button>
-                  <button onClick={() => handleRSVP('maybe')} disabled={!name.trim()} className="px-8 py-4 bg-white text-[#2c2418] border-2 border-[#886c44] rounded-xl text-base font-bold hover:bg-[#f0ede8] transition disabled:opacity-40">Maybe</button>
-                  <button onClick={() => handleRSVP('no')} disabled={!name.trim()} className="px-8 py-4 bg-white text-[#2c2418] border-2 border-[#886c44] rounded-xl text-base font-bold hover:bg-[#f0ede8] transition disabled:opacity-40">Can't Make It</button>
+                  <button onClick={() => handleRSVP('yes')} disabled={!name.trim()} className="px-8 py-4 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-40">Yes</button>
+                  <button onClick={() => handleRSVP('plus1')} disabled={!name.trim()} className="px-8 py-4 bg-white text-[#2c2418] border-2 border-[#886c44] rounded-xl text-base font-bold hover:bg-[#f0ede8] transition disabled:opacity-40">Yes +1</button>
+                  <button onClick={() => handleRSVP('no')} disabled={!name.trim()} className="px-8 py-4 bg-white text-[#2c2418] border-2 border-[#886c44] rounded-xl text-base font-bold hover:bg-[#f0ede8] transition disabled:opacity-40">No</button>
                 </div>
               </div>
             )}
             {responses.length > 0 && (
               <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] max-w-lg">
                 <div className="flex gap-8 mb-6 pb-6 border-b-2 border-[#e8e4dc]">
-                  <div className="text-center"><p className="text-3xl font-bold text-[#886c44]">{counts.yes}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">Coming</p></div>
-                  <div className="text-center"><p className="text-3xl font-bold text-[#9e8b6f]">{counts.maybe}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">Maybe</p></div>
-                  <div className="text-center"><p className="text-3xl font-bold text-[#9e8b6f]">{counts.no}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">Can't Make It</p></div>
+                  <div className="text-center"><p className="text-3xl font-bold text-[#886c44]">{counts.yes}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">Yes</p></div>
+                  <div className="text-center"><p className="text-3xl font-bold text-[#886c44]">{counts.plus1}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">Yes +1</p></div>
+                  <div className="text-center"><p className="text-3xl font-bold text-[#9e8b6f]">{counts.no}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">No</p></div>
                 </div>
                 <div className="space-y-2">
                   {responses.map(r => (
                     <p key={r.id} className="text-base text-[#2c2418] font-normal">
-                      {r.name} <span className="text-[#886c44] font-bold">— {r.response === 'yes' ? 'Coming' : r.response === 'maybe' ? 'Maybe' : "Can't make it"}</span>
+                      {r.name} <span className="text-[#886c44] font-bold">— {r.response === 'yes' ? 'Yes' : r.response === 'plus1' ? 'Yes +1' : 'No'}</span>
                     </p>
                   ))}
                 </div>
