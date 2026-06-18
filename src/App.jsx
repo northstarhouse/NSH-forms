@@ -51,9 +51,11 @@ function EventPage({ id }) {
   const [responses, setResponses] = useState([])
   const [slots, setSlots]     = useState([])
   const [signups, setSignups] = useState({})   // slotId → [signup]
-  const [name, setName]       = useState('')
-  const [submitted, setSubmitted] = useState(false)  // rsvp
-  const [signedSlot, setSignedSlot] = useState(null) // shift slot id
+  const [name, setName]           = useState('')
+  const [submitted, setSubmitted] = useState(false)   // rsvp
+  const [signedSlot, setSignedSlot]   = useState(null)   // shift: slot id just signed up for
+  const [expandedSlot, setExpandedSlot] = useState(null) // shift: slot id showing name input
+  const [slotName, setSlotName]       = useState('')     // shift: name being typed
   const [loading, setLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
@@ -99,12 +101,16 @@ function EventPage({ id }) {
   }
 
   const handleShiftSignup = async (slotId) => {
-    if (!name.trim()) return
+    if (!slotName.trim()) return
     const slot = slots.find(s => s.id === slotId)
     const current = signups[slotId] || []
     if (slot?.spots && current.length >= slot.spots) return
-    const { error } = await supabase.from('vol_slot_signups').insert({ slot_id: slotId, name: name.trim() })
-    if (!error) setSignedSlot(slotId)
+    const { error } = await supabase.from('vol_slot_signups').insert({ slot_id: slotId, name: slotName.trim() })
+    if (!error) {
+      setSignedSlot(slotId)
+      setExpandedSlot(null)
+      setSlotName('')
+    }
   }
 
   if (loading) return <LoadingScreen />
@@ -173,61 +179,98 @@ function EventPage({ id }) {
 
         {/* ── Shift mode ── */}
         {isShift && (
-          <>
-            <div className="bg-white rounded-xl border-2 border-[#e8e4dc] p-6 mb-6 max-w-lg">
-              <p className="text-base font-bold text-[#2c2418] mb-3">Your name</p>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name to sign up for a shift" className={INPUT} style={SANS} />
-            </div>
+          <div className="space-y-4">
+            {slots.length === 0 && (
+              <p className="text-base text-[#9e8b6f] font-bold">No time slots have been added yet.</p>
+            )}
+            {slots.map(slot => {
+              const slotSignups  = signups[slot.id] || []
+              const spotsLeft    = slot.spots != null ? slot.spots - slotSignups.length : null
+              const isFull       = spotsLeft !== null && spotsLeft <= 0
+              const didSignUp    = signedSlot === slot.id
+              const isExpanded   = expandedSlot === slot.id
 
-            <div className="space-y-4">
-              {slots.map(slot => {
-                const slotSignups = signups[slot.id] || []
-                const spotsLeft = slot.spots != null ? slot.spots - slotSignups.length : null
-                const isFull = spotsLeft !== null && spotsLeft <= 0
-                const didSignUp = signedSlot === slot.id
+              return (
+                <div key={slot.id} className={`bg-white rounded-xl border-2 p-6 transition-all ${isFull && !didSignUp ? 'border-[#d9cec2]' : didSignUp ? 'border-[#886c44]' : 'border-[#e8e4dc]'}`}>
 
-                return (
-                  <div key={slot.id} className={`bg-white rounded-xl border-2 p-6 transition ${isFull ? 'border-[#d9cec2] opacity-60' : 'border-[#e8e4dc] hover:border-[#886c44]'}`}>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        {slot.time_label && <p className="text-2xl font-normal text-[#2c2418] mb-2" style={SERIF}>{slot.time_label}</p>}
-                        <div className="flex flex-wrap gap-3 mb-2">
-                          {slot.duration && <span className="text-base font-bold text-[#886c44]">{slot.duration}</span>}
-                          {slot.role     && <span className="text-base font-bold text-[#886c44]">{slot.role}</span>}
-                        </div>
+                  {/* Shift info row */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      {slot.time_label && (
+                        <p className="text-2xl font-normal text-[#2c2418] mb-2" style={SERIF}>{slot.time_label}</p>
+                      )}
+                      <div className="flex flex-wrap gap-4 mb-3">
+                        {slot.duration && <span className="text-base font-bold text-[#886c44]">{slot.duration}</span>}
+                        {slot.role     && <span className="text-base font-bold text-[#886c44]">{slot.role}</span>}
                         {spotsLeft !== null && (
-                          <p className={`text-sm font-bold ${isFull ? 'text-red-500' : 'text-[#9e8b6f]'}`}>
-                            {isFull ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} remaining`}
-                          </p>
-                        )}
-                        {slotSignups.length > 0 && (
-                          <p className="text-sm text-[#9e8b6f] font-semibold mt-1">
-                            Signed up: {slotSignups.map(s => s.name).join(', ')}
-                          </p>
+                          <span className={`text-base font-bold ${isFull ? 'text-red-500' : 'text-[#9e8b6f]'}`}>
+                            {isFull ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
+                          </span>
                         )}
                       </div>
-                      <div className="flex-shrink-0 pt-1">
-                        {didSignUp ? (
-                          <div className="flex items-center gap-2 text-[#886c44]">
-                            <Check size={20} />
-                            <span className="text-base font-bold">Signed up!</span>
-                          </div>
-                        ) : (
-                          <button onClick={() => handleShiftSignup(slot.id)} disabled={!name.trim() || isFull}
-                            className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
-                            {isFull ? 'Full' : 'Sign Up'}
-                          </button>
-                        )}
-                      </div>
+
+                      {/* Who signed up */}
+                      {slotSignups.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {slotSignups.map(s => (
+                            <span key={s.id} className="px-3 py-1 bg-[#f0e6d8] text-[#2c2418] text-sm font-bold rounded-full">
+                              {s.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action */}
+                    <div className="flex-shrink-0 pt-1">
+                      {didSignUp ? (
+                        <div className="flex items-center gap-2 text-[#886c44]">
+                          <Check size={20} />
+                          <span className="text-base font-bold">Signed up!</span>
+                        </div>
+                      ) : isFull ? (
+                        <span className="text-base font-bold text-red-400">Full</span>
+                      ) : isExpanded ? (
+                        <button onClick={() => { setExpandedSlot(null); setSlotName('') }}
+                          className="text-sm font-bold text-[#9e8b6f] hover:text-[#2c2418] transition">
+                          Cancel
+                        </button>
+                      ) : (
+                        <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
+                          className="px-5 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition whitespace-nowrap">
+                          Sign Up for Shift
+                        </button>
+                      )}
                     </div>
                   </div>
-                )
-              })}
-              {slots.length === 0 && (
-                <p className="text-base text-[#9e8b6f] font-bold">No time slots have been added yet.</p>
-              )}
-            </div>
-          </>
+
+                  {/* Inline name input */}
+                  {isExpanded && (
+                    <div className="mt-5 pt-5 border-t-2 border-[#f0e6d8] flex gap-3">
+                      <input
+                        type="text"
+                        value={slotName}
+                        onChange={e => setSlotName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleShiftSignup(slot.id)}
+                        placeholder="Enter your full name"
+                        autoFocus
+                        className={`${INPUT} flex-1`}
+                        style={SANS}
+                      />
+                      <button
+                        onClick={() => handleShiftSignup(slot.id)}
+                        disabled={!slotName.trim()}
+                        className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-40 whitespace-nowrap"
+                        style={SANS}
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
     </div>
