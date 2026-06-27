@@ -512,9 +512,9 @@ function EventPage({ id }) {
                       <div className="flex flex-wrap gap-4 mb-3">
                         {slot.duration && <span className="text-base font-bold text-[#886c44]">{slot.duration}</span>}
                         {slot.role     && <span className="text-base font-bold text-[#886c44]">{slot.role}</span>}
-                        {spotsLeft !== null && (
-                          <span className={`text-base font-bold ${isFull ? 'text-red-500' : 'text-[#9e8b6f]'}`}>
-                            {isFull ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
+                        {spotsLeft !== null && !isFull && (
+                          <span className="text-base font-bold text-[#9e8b6f]">
+                            {`${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
                           </span>
                         )}
                       </div>
@@ -532,7 +532,7 @@ function EventPage({ id }) {
                           <Check size={20} /><span className="text-base font-bold">Signed up!</span>
                         </div>
                       ) : isFull ? (
-                        <span className="text-base font-bold text-red-400">Full</span>
+                        <span className="px-4 py-2 bg-[#e8e4dc] text-[#9e8b6f] rounded-lg text-sm font-bold uppercase tracking-widest">Filled</span>
                       ) : isExpanded ? (
                         <button onClick={() => { setExpandedSlot(null); setSlotName('') }} className="text-sm font-bold text-[#9e8b6f] hover:text-[#2c2418] transition">Cancel</button>
                       ) : (
