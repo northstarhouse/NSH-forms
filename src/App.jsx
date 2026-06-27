@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Copy, ArrowLeft, Check, Plus, X } from 'lucide-react'
+import { Copy, ArrowLeft, Check, Plus, X, Calendar, MapPin, Clock } from 'lucide-react'
 import { supabase } from './supabase'
 
-const FONT  = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
-const SERIF = FONT
-const SANS  = FONT
+const FONT    = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
+const SERIF   = FONT
+const SANS    = FONT
+const DISPLAY = { fontFamily: "'Playfair Display', Georgia, serif" }
 const INPUT = "w-full p-3 border-2 border-[#d9cec2] rounded-lg text-base font-normal focus:outline-none focus:border-[#886c44] bg-white"
 
 const QUESTION_TYPES = [
@@ -20,10 +21,11 @@ const QUESTION_TYPES = [
 const fmtDate = d => {
   if (!d) return null
   const [y, m, day] = d.split('-').map(Number)
-  return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  return new Date(y, m - 1, day).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 const fmtTime = t => {
   if (!t) return null
+  if (/[a-zA-Z–-]/.test(t.replace(/^\d{2}:\d{2}$/, ''))) return t
   const [h, min] = t.split(':').map(Number)
   const ampm = h >= 12 ? 'PM' : 'AM'
   return `${h % 12 || 12}${min ? ':' + String(min).padStart(2, '0') : ''} ${ampm}`
@@ -33,6 +35,25 @@ const genId      = () => Math.random().toString(36).slice(2, 10)
 const mkQuestion = (type = 'short_text') => ({ id: genId(), type, label: '', required: false, options: ['', ''] })
 
 // ─── Shared UI ─────────────────────────────────────────────────────────────────
+
+function EventTopBar() {
+  return (
+    <div className="bg-[#f5f0e7] border-b border-[#e0d5c0]" style={FONT}>
+      <div className="px-6 sm:px-12 lg:px-20 xl:px-28 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full border border-[#8a7355] flex items-center justify-center flex-shrink-0">
+            <span className="text-[#8a7355] text-sm leading-none">★</span>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-[#2c2418] leading-tight">The North Star House</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#a08060]">Historic Landmark &amp; Event Venue</p>
+          </div>
+        </div>
+        <p className="text-sm text-[#a08060] font-medium hidden sm:block">Grass Valley, California</p>
+      </div>
+    </div>
+  )
+}
 
 function TopBar({ onBack }) {
   return (
@@ -452,86 +473,90 @@ function EventPage({ id }) {
   const timeStr = fmtTime(event.time)
 
   return (
-    <div className="min-h-screen bg-[#f8f5f0]" style={FONT}>
+    <div className="min-h-screen bg-[#f5f0e7]" style={FONT}>
 
-      {/* ── Branded hero ── */}
-      <div className="bg-[#2c2418] px-6 sm:px-12 lg:px-20 xl:px-28 pt-10 pb-14">
-        <button onClick={() => window.history.back()}
-          className="flex items-center gap-2 text-[#a08060] hover:text-[#c4a882] text-sm font-medium mb-10 transition">
-          <ArrowLeft size={14} /> Back
-        </button>
+      {/* ── Top bar with logo ── */}
+      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0] px-6 sm:px-12 lg:px-20 xl:px-28 py-3 flex items-center justify-between">
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="North Star House" className="h-10 w-auto" />
+        <p className="text-sm text-[#a08060] font-medium hidden sm:block">Grass Valley, California</p>
+      </div>
 
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#c4a882] mb-5">
-          {isShift ? 'Volunteer Sign-Up' : 'Event'} · North Star House
+      {/* ── Event header ── */}
+      <div className="px-6 sm:px-12 lg:px-20 xl:px-28 pt-10 pb-8 max-w-4xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#886c44] mb-5">
+          {isShift ? 'Volunteer Sign-Up' : 'Event'}
         </p>
 
-        <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-8 max-w-2xl">
+        <h1 className="text-5xl sm:text-6xl font-bold text-[#1e1a14] leading-tight mb-7" style={DISPLAY}>
           {event.title}
         </h1>
 
-        <div className="flex flex-wrap gap-x-10 gap-y-4">
+        <div className="flex flex-wrap items-center gap-x-7 gap-y-2 mb-6">
           {dateStr && (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-1">Event Date</p>
-              <p className="text-base font-medium text-white">{dateStr}</p>
+            <div className="flex items-center gap-2">
+              <Calendar size={14} className="text-[#886c44] flex-shrink-0" />
+              <span className="text-sm font-medium text-[#2c2418]">{dateStr}</span>
             </div>
           )}
-          {timeStr && (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-1">Event Time</p>
-              <p className="text-base font-medium text-white">{timeStr}</p>
+          <div className="flex items-center gap-2">
+            <MapPin size={14} className="text-[#886c44] flex-shrink-0" />
+            <span className="text-sm font-medium text-[#2c2418]">The North Star House</span>
+          </div>
+          {event.time && (
+            <div className="flex items-center gap-2">
+              <Clock size={14} className="text-[#886c44] flex-shrink-0" />
+              <span className="text-sm font-medium text-[#2c2418]">{event.time}</span>
             </div>
           )}
         </div>
+
+        {event.description && (
+          <p className="text-base text-[#5a4a35] leading-relaxed max-w-xl">{event.description}</p>
+        )}
       </div>
 
       {/* ── Body ── */}
-      <div className="px-6 sm:px-12 lg:px-20 xl:px-28 py-10">
-
-        {event.description && (
-          <p className="text-sm text-gray-500 mb-8 max-w-xl leading-relaxed">{event.description}</p>
-        )}
+      <div className="px-6 sm:px-12 lg:px-20 xl:px-28 pb-14">
 
         {/* RSVP */}
         {!isShift && (
           <div className="max-w-sm">
             {submitted ? (
-              <div className="flex items-center gap-3 py-4 px-5 bg-white border border-gray-200 rounded-xl shadow-sm">
+              <div className="flex items-center gap-3 py-4 px-5 bg-white border border-[#e0d5c0] rounded-xl">
                 <Check size={18} className="text-[#886c44] flex-shrink-0" />
-                <p className="text-sm font-semibold text-gray-800">Thanks, {name}! Your RSVP was recorded.</p>
+                <p className="text-sm font-semibold text-[#2c2418]">Thanks, {name}! Your RSVP was recorded.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+              <div className="bg-white rounded-xl border border-[#e0d5c0] p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Your Name</label>
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-2">Your Name</label>
                   <input type="text" value={name} onChange={e => setName(e.target.value)}
                     placeholder="Full name" autoFocus
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:border-[#886c44]" />
+                    className="w-full px-4 py-3 border border-[#ddd4c0] rounded-lg text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
                 </div>
-                <div className="flex gap-2 pt-1">
+                <div className="flex gap-2">
                   <button onClick={() => handleRSVP('yes')} disabled={!name.trim()}
-                    className="flex-1 py-3 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">Yes</button>
+                    className="flex-1 py-3 bg-[#2c2418] text-white rounded-lg text-sm font-semibold hover:bg-[#1a150e] transition disabled:opacity-40">Yes</button>
                   <button onClick={() => handleRSVP('plus1')} disabled={!name.trim()}
-                    className="flex-1 py-3 border border-[#886c44] text-[#886c44] rounded-lg text-sm font-semibold hover:bg-[#fdf8f3] transition disabled:opacity-40 bg-white">Yes +1</button>
+                    className="flex-1 py-3 border border-[#2c2418] text-[#2c2418] rounded-lg text-sm font-semibold hover:bg-[#f0ebe0] transition disabled:opacity-40 bg-white">Yes +1</button>
                   <button onClick={() => handleRSVP('no')} disabled={!name.trim()}
-                    className="flex-1 py-3 border border-gray-200 text-gray-400 rounded-lg text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-40 bg-white">No</button>
+                    className="flex-1 py-3 border border-[#ddd4c0] text-[#a08060] rounded-lg text-sm font-semibold hover:bg-[#f0ebe0] transition disabled:opacity-40 bg-white">No</button>
                 </div>
               </div>
             )}
-
             {responses.length > 0 && (
-              <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <div className="flex gap-6 mb-4 pb-4 border-b border-gray-100">
+              <div className="mt-4 bg-white rounded-xl border border-[#e0d5c0] p-5">
+                <div className="flex gap-6 mb-4 pb-4 border-b border-[#ede6d8]">
                   {[['yes', 'Yes', counts.yes], ['plus1', '+1', counts.plus1], ['no', 'No', counts.no]].map(([k, l, c]) => (
                     <div key={k}>
                       <p className="text-xl font-bold text-[#2c2418]">{c}</p>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{l}</p>
+                      <p className="text-xs font-semibold text-[#a08060] uppercase tracking-wide">{l}</p>
                     </div>
                   ))}
                 </div>
                 <div className="space-y-1">
                   {responses.map(r => (
-                    <p key={r.id} className="text-sm text-gray-600">
+                    <p key={r.id} className="text-sm text-[#5a4a35]">
                       {r.name} <span className="text-[#886c44] font-semibold">{r.response === 'plus1' ? '· +1' : r.response === 'yes' ? '· Yes' : '· No'}</span>
                     </p>
                   ))}
@@ -543,16 +568,21 @@ function EventPage({ id }) {
 
         {/* Shift slots */}
         {isShift && (
-          <div className="max-w-xl">
+          <div className="max-w-2xl">
             {slots.length === 0 && (
-              <p className="text-sm text-gray-400">No time slots added yet.</p>
+              <p className="text-sm text-[#a08060]">No time slots added yet.</p>
             )}
-
             {slots.length > 0 && (
-              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Available Shifts</p>
+              <>
+                <div className="flex items-baseline justify-between mb-3">
+                  <h2 className="text-2xl font-bold text-[#1e1a14]" style={DISPLAY}>Available Shifts</h2>
+                  <p className="text-sm text-[#a08060] hidden sm:block">Choose a role that fits your schedule</p>
+                </div>
+                <div className="border-t border-[#e0d5c0] mb-8" />
+              </>
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-8">
               {slots.map(slot => {
                 const slotSignups = signups[slot.id] || []
                 const spotsLeft   = slot.spots != null ? slot.spots - slotSignups.length : null
@@ -561,66 +591,53 @@ function EventPage({ id }) {
                 const isExpanded  = expandedSlot === slot.id
 
                 return (
-                  <div key={slot.id}
-                    className={`bg-white rounded-xl shadow-sm overflow-hidden border-l-4 transition-all
-                      ${isFull && !didSignUp ? 'border-l-gray-200 opacity-60' : didSignUp ? 'border-l-[#886c44] ring-1 ring-[#886c44] ring-opacity-20' : 'border-l-[#886c44]'}`}>
-                    <div className="px-5 py-4 border border-l-0 border-gray-100 rounded-r-xl">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-base font-semibold ${isFull && !didSignUp ? 'text-gray-400' : 'text-gray-900'}`}>
-                            {slot.time_label}
-                          </p>
-                          {slot.duration && (
-                            <p className={`text-sm mt-1 leading-relaxed ${isFull && !didSignUp ? 'text-gray-300' : 'text-gray-500'}`}>
-                              {slot.duration}
-                            </p>
-                          )}
-                          {spotsLeft !== null && !isFull && (
-                            <p className="text-xs font-semibold text-[#886c44] mt-1.5">
-                              {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} remaining
-                            </p>
-                          )}
-                          {slotSignups.length > 0 && !isFull && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {slotSignups.map(s => (
-                                <span key={s.id} className="text-xs text-gray-400 font-medium after:content-[','] last:after:content-['']">{s.name}</span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-shrink-0 pt-0.5">
-                          {didSignUp ? (
-                            <div className="flex items-center gap-1.5 text-[#886c44]">
-                              <Check size={15} /><span className="text-sm font-semibold">Signed up</span>
-                            </div>
-                          ) : isFull ? (
-                            <span className="text-xs font-bold uppercase tracking-widest text-gray-300">Filled</span>
-                          ) : isExpanded ? (
-                            <button onClick={() => { setExpandedSlot(null); setSlotName('') }}
-                              className="text-sm font-medium text-gray-400 hover:text-gray-600 transition">Cancel</button>
-                          ) : (
-                            <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
-                              className="px-4 py-2 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition">
-                              Sign Up
-                            </button>
-                          )}
-                        </div>
+                  <div key={slot.id} className={isFull && !didSignUp ? 'opacity-50' : ''}>
+                    <div className="flex items-start justify-between gap-6">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-lg font-bold text-[#1e1a14] mb-1" style={DISPLAY}>
+                          {slot.time_label}
+                        </p>
+                        {slot.duration && (
+                          <p className="text-sm text-[#5a4a35] leading-relaxed mb-2">{slot.duration}</p>
+                        )}
+                        {spotsLeft !== null && !isFull && (
+                          <p className="text-sm text-[#a08060]">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</p>
+                        )}
                       </div>
 
-                      {isExpanded && (
-                        <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
-                          <input type="text" value={slotName} onChange={e => setSlotName(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleShiftSignup(slot.id)}
-                            placeholder="Your full name" autoFocus
-                            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#886c44]" />
-                          <button onClick={() => handleShiftSignup(slot.id)} disabled={!slotName.trim()}
-                            className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
-                            Confirm
+                      <div className="flex-shrink-0 pt-1">
+                        {didSignUp ? (
+                          <div className="flex items-center gap-1.5 text-[#886c44]">
+                            <Check size={15} /><span className="text-sm font-semibold">Signed up</span>
+                          </div>
+                        ) : isFull ? (
+                          <span className="text-xs font-bold uppercase tracking-widest text-[#b0a090]">Filled</span>
+                        ) : isExpanded ? (
+                          <button onClick={() => { setExpandedSlot(null); setSlotName('') }}
+                            className="text-sm font-medium text-[#a08060] hover:text-[#5a4a35] transition">Cancel</button>
+                        ) : (
+                          <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
+                            className="px-5 py-2.5 bg-[#2c2418] text-white rounded-lg text-sm font-semibold hover:bg-[#1a150e] transition whitespace-nowrap">
+                            Sign Up
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
+
+                    {isExpanded && (
+                      <div className="mt-3 flex gap-2 max-w-md">
+                        <input type="text" value={slotName} onChange={e => setSlotName(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleShiftSignup(slot.id)}
+                          placeholder="Your full name" autoFocus
+                          className="flex-1 px-4 py-2.5 border border-[#ddd4c0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#886c44]" />
+                        <button onClick={() => handleShiftSignup(slot.id)} disabled={!slotName.trim()}
+                          className="px-5 py-2.5 bg-[#2c2418] text-white rounded-lg text-sm font-semibold hover:bg-[#1a150e] transition disabled:opacity-40">
+                          Confirm
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="border-t border-[#e8e0d0] mt-8" />
                   </div>
                 )
               })}
@@ -937,7 +954,7 @@ function EventDetail({ id, onBack }) {
               <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} placeholder="Event title" className={INPUT} style={SANS} />
               <div className="grid grid-cols-2 gap-4">
                 <input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} className={INPUT} style={SANS} />
-                {!isShift && <input type="time" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className={INPUT} style={SANS} />}
+                {!isShift && <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className={INPUT} style={SANS} />}
               </div>
               <textarea placeholder="Description (optional)" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
             </div>
@@ -1470,7 +1487,7 @@ function AdminDashboard() {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <input placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className={`${INPUT} col-span-2`} style={SANS} />
                 <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className={INPUT} style={SANS} />
-                {eventType === 'rsvp' && <input type="time" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />}
+                {eventType === 'rsvp' && <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />}
               </div>
               <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT} mb-6`} rows={2} style={SANS} />
               {eventType === 'shift' && (
