@@ -5,7 +5,7 @@ import { supabase } from './supabase'
 const FONT    = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
 const SERIF   = FONT
 const SANS    = FONT
-const DISPLAY = { fontFamily: "'Playfair Display', Georgia, serif" }
+const DISPLAY = { fontFamily: "'Cardo', Georgia, serif" }
 const INPUT = "w-full p-3 border-2 border-[#d9cec2] rounded-lg text-base font-normal focus:outline-none focus:border-[#886c44] bg-white"
 
 const QUESTION_TYPES = [
@@ -477,7 +477,7 @@ function EventPage({ id }) {
 
       {/* ── Top bar with logo ── */}
       <div className="bg-[#f5f0e7] border-b border-[#e0d5c0] px-6 sm:px-12 lg:px-20 xl:px-28 py-3 flex items-center justify-between">
-        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="North Star House" className="h-10 w-auto" />
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="North Star House" className="h-16 w-auto" />
         <p className="text-sm text-[#a08060] font-medium hidden sm:block">Grass Valley, California</p>
       </div>
 
@@ -487,7 +487,7 @@ function EventPage({ id }) {
           {isShift ? 'Volunteer Sign-Up' : 'Event'}
         </p>
 
-        <h1 className="text-5xl sm:text-6xl font-bold text-[#1e1a14] leading-tight mb-7" style={DISPLAY}>
+        <h1 className="text-4xl sm:text-5xl font-bold text-[#1e1a14] leading-tight mb-7" style={DISPLAY}>
           {event.title}
         </h1>
 
