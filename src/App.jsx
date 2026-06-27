@@ -519,48 +519,59 @@ function EventPage({ id }) {
 
         {/* RSVP */}
         {!isShift && (
-          <div className="max-w-sm">
+          <div className="bg-white rounded-2xl px-8 py-8">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-2xl font-bold text-[#1e1a14]" style={DISPLAY}>RSVP</h2>
+              <p className="text-sm text-[#a08060] hidden sm:block">Let us know if you can make it</p>
+            </div>
+            <div className="border-t border-[#e0d5c0] mb-8" />
+
             {submitted ? (
-              <div className="flex items-center gap-3 py-4 px-5 bg-white border border-[#e0d5c0] rounded-xl">
+              <div className="flex items-center gap-3 py-5 px-6 bg-[#f5f0e7] rounded-xl">
                 <Check size={18} className="text-[#886c44] flex-shrink-0" />
-                <p className="text-sm font-semibold text-[#2c2418]">Thanks, {name}! Your RSVP was recorded.</p>
+                <p className="text-base font-semibold text-[#2c2418]">Thanks, {name}! Your RSVP was recorded.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-[#e0d5c0] p-6 space-y-4">
+              <div className="space-y-5 max-w-md">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-2">Your Name</label>
                   <input type="text" value={name} onChange={e => setName(e.target.value)}
                     placeholder="Full name" autoFocus
                     className="w-full px-4 py-3 border border-[#ddd4c0] rounded-lg text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button onClick={() => handleRSVP('yes')} disabled={!name.trim()}
-                    className="flex-1 py-3 bg-[#2c2418] text-white rounded-lg text-sm font-semibold hover:bg-[#1a150e] transition disabled:opacity-40">Yes</button>
+                    className="flex-1 py-3 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">Attending</button>
                   <button onClick={() => handleRSVP('plus1')} disabled={!name.trim()}
-                    className="flex-1 py-3 border border-[#2c2418] text-[#2c2418] rounded-lg text-sm font-semibold hover:bg-[#f0ebe0] transition disabled:opacity-40 bg-white">Yes +1</button>
+                    className="flex-1 py-3 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-semibold hover:bg-[#f5f0e7] transition disabled:opacity-40 bg-white">Attending +1</button>
                   <button onClick={() => handleRSVP('no')} disabled={!name.trim()}
-                    className="flex-1 py-3 border border-[#ddd4c0] text-[#a08060] rounded-lg text-sm font-semibold hover:bg-[#f0ebe0] transition disabled:opacity-40 bg-white">No</button>
+                    className="flex-1 py-3 border-2 border-[#e0d5c0] text-[#a08060] rounded-lg text-sm font-semibold hover:bg-[#f5f0e7] transition disabled:opacity-40 bg-white">Can't Make It</button>
                 </div>
               </div>
             )}
+
             {responses.length > 0 && (
-              <div className="mt-4 bg-white rounded-xl border border-[#e0d5c0] p-5">
-                <div className="flex gap-6 mb-4 pb-4 border-b border-[#ede6d8]">
-                  {[['yes', 'Yes', counts.yes], ['plus1', '+1', counts.plus1], ['no', 'No', counts.no]].map(([k, l, c]) => (
+              <>
+                <div className="border-t border-[#e0d5c0] mt-8 mb-6" />
+                <div className="flex gap-8 mb-6">
+                  {[['yes', 'Attending', counts.yes], ['plus1', '+1', counts.plus1], ['no', "Can't Make It", counts.no]].map(([k, l, c]) => (
                     <div key={k}>
-                      <p className="text-xl font-bold text-[#2c2418]">{c}</p>
-                      <p className="text-xs font-semibold text-[#a08060] uppercase tracking-wide">{l}</p>
+                      <p className="text-3xl font-bold text-[#1e1a14]" style={DISPLAY}>{c}</p>
+                      <p className="text-xs font-semibold text-[#a08060] uppercase tracking-wide mt-1">{l}</p>
                     </div>
                   ))}
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-3">
                   {responses.map(r => (
-                    <p key={r.id} className="text-sm text-[#5a4a35]">
-                      {r.name} <span className="text-[#886c44] font-semibold">{r.response === 'plus1' ? '· +1' : r.response === 'yes' ? '· Yes' : '· No'}</span>
-                    </p>
+                    <div key={r.id} className="flex items-baseline justify-between">
+                      <p className="text-base font-medium text-[#2c2418]">{r.name}</p>
+                      <span className="text-sm text-[#886c44] font-semibold">
+                        {r.response === 'plus1' ? 'Attending +1' : r.response === 'yes' ? 'Attending' : "Can't Make It"}
+                      </span>
+                    </div>
                   ))}
                 </div>
-              </div>
+              </>
             )}
           </div>
         )}
