@@ -550,37 +550,6 @@ function EventPage({ id }) {
               </div>
             )}
 
-            {responses.length > 0 && (
-              <>
-                <div className="border-t border-[#e0d5c0] mt-8 mb-6" />
-                {(() => {
-                  const opts = event.options?.length ? event.options : ['Attending', 'Attending +1', "Can't Make It"]
-                  const tally = {}
-                  opts.forEach(o => { tally[o] = 0 })
-                  responses.forEach(r => { if (tally[r.response] !== undefined) tally[r.response]++ })
-                  return (
-                    <>
-                      <div className="flex flex-wrap gap-8 mb-6">
-                        {opts.map(o => (
-                          <div key={o}>
-                            <p className="text-3xl font-bold text-[#1e1a14]" style={DISPLAY}>{tally[o] ?? 0}</p>
-                            <p className="text-xs font-semibold text-[#a08060] uppercase tracking-wide mt-1">{o}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="space-y-3">
-                        {responses.map(r => (
-                          <div key={r.id} className="flex items-baseline justify-between">
-                            <p className="text-base font-medium text-[#2c2418]">{r.name}</p>
-                            <span className="text-sm text-[#886c44] font-semibold">{r.response}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )
-                })()}
-              </>
-            )}
           </div>
         )}
 
