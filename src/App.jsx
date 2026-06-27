@@ -617,7 +617,7 @@ function EventPage({ id }) {
                             className="text-sm font-medium text-[#a08060] hover:text-[#5a4a35] transition">Cancel</button>
                         ) : (
                           <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
-                            className="px-5 py-2.5 bg-[#2c2418] text-white rounded-lg text-sm font-semibold hover:bg-[#1a150e] transition whitespace-nowrap">
+                            className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition whitespace-nowrap">
                             Sign Up
                           </button>
                         )}
@@ -631,7 +631,7 @@ function EventPage({ id }) {
                           placeholder="Your full name" autoFocus
                           className="flex-1 px-4 py-2.5 border border-[#ddd4c0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#886c44]" />
                         <button onClick={() => handleShiftSignup(slot.id)} disabled={!slotName.trim()}
-                          className="px-5 py-2.5 bg-[#2c2418] text-white rounded-lg text-sm font-semibold hover:bg-[#1a150e] transition disabled:opacity-40">
+                          className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
                           Confirm
                         </button>
                       </div>
