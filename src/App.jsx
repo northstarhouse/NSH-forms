@@ -951,19 +951,29 @@ function EventDetail({ id, onBack }) {
   if (!event)  return <NotFound />
 
   const isShift = event.event_type === 'shift'
-  const rsvpCounts = { yes: 0, plus1: 0, no: 0 }
-  responses.forEach(r => { if (rsvpCounts[r.response] !== undefined) rsvpCounts[r.response]++ })
+  const opts = event.options?.length ? event.options : []
+  const tally = {}
+  opts.forEach(o => { tally[o] = 0 })
+  responses.forEach(r => { if (tally[r.response] !== undefined) tally[r.response]++ })
+
+  const dateStr = event.date ? new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : null
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
-      <TopBar />
-      <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
-        <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm mb-8 hover:text-[#6d5436] transition">
-          <ArrowLeft size={16} /> Back to dashboard
-        </button>
+    <div className="min-h-screen bg-[#f5f0e7]" style={FONT}>
+      {/* Top bar */}
+      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0]">
+        <div className="max-w-4xl mx-auto px-6 py-3 flex justify-between items-center">
+          <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm hover:text-[#6d5436] transition">
+            <ArrowLeft size={16} /> Dashboard
+          </button>
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-16 w-auto" />
+        </div>
+      </div>
 
+      <div className="max-w-4xl mx-auto px-6 pt-10 pb-14">
+        {/* Event header */}
         {editing ? (
-          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-6">
+          <div className="bg-white rounded-2xl px-8 py-8 mb-6">
             <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">Edit Event</p>
             <div className="space-y-4 mb-6">
               <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} placeholder="Event title" className={INPUT} style={SANS} />
@@ -1021,40 +1031,60 @@ function EventDetail({ id, onBack }) {
             </div>
           </div>
         ) : (
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-[#886c44] font-bold mb-2">{isShift ? 'Shift Sign-up' : 'RSVP Event'}</p>
-              <h2 className="text-4xl font-normal text-[#2c2418] mb-2" style={SERIF}>{event.title}</h2>
-              {(event.date || event.time) && <p className="text-base text-[#886c44] font-bold mb-2">{event.date}{event.date && event.time ? ' · ' : ''}{event.time}</p>}
-              {event.description && <p className="text-base text-[#2c2418]">{event.description}</p>}
+          <div className="mb-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#886c44] mb-4">
+              {isShift ? 'Volunteer Sign-Up' : 'RSVP Event'}
+            </p>
+            <div className="flex items-start justify-between gap-6 mb-5">
+              <h1 className="text-4xl sm:text-5xl font-bold text-[#1e1a14] leading-tight" style={DISPLAY}>{event.title}</h1>
+              <button onClick={() => setEditing(true)}
+                className="flex-shrink-0 mt-2 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition">
+                Edit
+              </button>
             </div>
-            <button onClick={() => setEditing(true)}
-              className="ml-6 mt-1 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition flex-shrink-0">
-              Edit
-            </button>
+            <div className="flex flex-wrap items-center gap-x-7 gap-y-2 mb-4">
+              {(dateStr || event.time) && (
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-[#886c44] flex-shrink-0" />
+                  <span className="text-sm font-medium text-[#2c2418]">{dateStr}{dateStr && event.time ? ' · ' : ''}{event.time}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <MapPin size={14} className="text-[#886c44] flex-shrink-0" />
+                <span className="text-sm font-medium text-[#2c2418]">The North Star House</span>
+              </div>
+            </div>
+            {event.description && <p className="text-base text-[#5a4a35] leading-relaxed">{event.description}</p>}
           </div>
         )}
 
+        {/* RSVP responses */}
         {!isShift && (
-          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc]">
-            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">RSVPs ({responses.length})</p>
+          <div className="bg-white rounded-2xl px-8 py-8">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-2xl font-bold text-[#1e1a14]" style={DISPLAY}>RSVPs</h2>
+              <p className="text-sm text-[#a08060]">{responses.length} response{responses.length !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="border-t border-[#e0d5c0] mb-6" />
             {responses.length === 0 ? (
-              <p className="text-[#9e8b6f] font-bold">No RSVPs yet.</p>
+              <p className="text-sm text-[#a08060]">No RSVPs yet.</p>
             ) : (
               <>
-                <div className="flex gap-8 mb-6">
-                  {[['yes', 'Yes'], ['plus1', '+1'], ['no', 'No']].map(([key, label]) => (
-                    <div key={key} className="text-center">
-                      <p className="text-3xl font-normal text-[#2c2418]" style={SERIF}>{rsvpCounts[key]}</p>
-                      <p className="text-xs font-bold text-[#886c44] uppercase tracking-wide">{label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-1">
+                {opts.length > 0 && (
+                  <div className="flex flex-wrap gap-8 mb-6">
+                    {opts.map(o => (
+                      <div key={o}>
+                        <p className="text-3xl font-bold text-[#1e1a14]" style={DISPLAY}>{tally[o] ?? 0}</p>
+                        <p className="text-xs font-semibold text-[#a08060] uppercase tracking-wide mt-1">{o}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="space-y-3">
                   {responses.map(r => (
-                    <div key={r.id} className="flex justify-between items-center py-2 border-b border-[#e8e4dc] last:border-0">
-                      <p className="text-base text-[#2c2418] font-bold">{r.name}</p>
-                      <p className="text-sm text-[#886c44] font-bold capitalize">{r.response === 'plus1' ? '+1' : r.response}</p>
+                    <div key={r.id} className="flex items-baseline justify-between">
+                      <p className="text-base font-medium text-[#2c2418]">{r.name}</p>
+                      <span className="text-sm text-[#886c44] font-semibold">{r.response}</span>
                     </div>
                   ))}
                 </div>
@@ -1063,27 +1093,39 @@ function EventDetail({ id, onBack }) {
           </div>
         )}
 
+        {/* Shift signups */}
         {isShift && (
-          <div className="space-y-4">
-            {slots.length === 0 && <p className="text-[#9e8b6f] font-bold">No time slots yet.</p>}
-            {slots.map(slot => {
-              const su = signups[slot.id] || []
-              return (
-                <div key={slot.id} className="bg-white p-6 rounded-xl border-2 border-[#e8e4dc]">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="text-lg font-bold text-[#2c2418]">{slot.time_label}</p>
-                      {slot.duration && <p className="text-sm text-[#886c44] font-medium">{slot.duration}</p>}
+          <div className="bg-white rounded-2xl px-8 py-8">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-2xl font-bold text-[#1e1a14]" style={DISPLAY}>Signups</h2>
+            </div>
+            <div className="border-t border-[#e0d5c0] mb-6" />
+            {slots.length === 0 && <p className="text-sm text-[#a08060]">No time slots yet.</p>}
+            <div className="space-y-8">
+              {slots.map(slot => {
+                const su = signups[slot.id] || []
+                return (
+                  <div key={slot.id}>
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <p className="text-lg font-bold text-[#1e1a14]" style={DISPLAY}>{slot.time_label}</p>
+                        {slot.duration && <p className="text-sm text-[#5a4a35] mt-0.5">{slot.duration}</p>}
+                      </div>
+                      <p className="text-sm font-semibold text-[#a08060] flex-shrink-0 pt-1">
+                        {su.length}{slot.spots ? `/${slot.spots}` : ''} signed up
+                      </p>
                     </div>
-                    <p className="text-sm font-bold text-[#9e8b6f]">{su.length}{slot.spots ? `/${slot.spots}` : ''} signed up</p>
+                    {su.length === 0
+                      ? <p className="text-sm text-[#a08060]">No signups yet.</p>
+                      : <div className="space-y-2">{su.map(s => (
+                          <p key={s.id} className="text-base font-medium text-[#2c2418]">{s.name}</p>
+                        ))}</div>
+                    }
+                    <div className="border-t border-[#e8e0d0] mt-6" />
                   </div>
-                  {su.length === 0
-                    ? <p className="text-sm text-[#9e8b6f] font-bold">No signups yet.</p>
-                    : <div className="space-y-1">{su.map(s => <p key={s.id} className="text-base text-[#2c2418]">{s.name}</p>)}</div>
-                  }
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
