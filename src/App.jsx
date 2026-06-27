@@ -539,13 +539,13 @@ function EventPage({ id }) {
                     placeholder="Full name" autoFocus
                     className="w-full px-4 py-3 border border-[#ddd4c0] rounded-lg text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
                 </div>
-                <div className="flex gap-3">
-                  <button onClick={() => handleRSVP('yes')} disabled={!name.trim()}
-                    className="flex-1 py-3 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">Attending</button>
-                  <button onClick={() => handleRSVP('plus1')} disabled={!name.trim()}
-                    className="flex-1 py-3 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-semibold hover:bg-[#f5f0e7] transition disabled:opacity-40 bg-white">Attending +1</button>
-                  <button onClick={() => handleRSVP('no')} disabled={!name.trim()}
-                    className="flex-1 py-3 border-2 border-[#e0d5c0] text-[#a08060] rounded-lg text-sm font-semibold hover:bg-[#f5f0e7] transition disabled:opacity-40 bg-white">Can't Make It</button>
+                <div className="flex flex-wrap gap-3">
+                  {(event.options?.length ? event.options : ['Attending', 'Attending +1', "Can't Make It"]).map(opt => (
+                    <button key={opt} onClick={() => handleRSVP(opt)} disabled={!name.trim()}
+                      className="flex-1 min-w-[120px] py-3 px-4 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
+                      {opt}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -553,24 +553,32 @@ function EventPage({ id }) {
             {responses.length > 0 && (
               <>
                 <div className="border-t border-[#e0d5c0] mt-8 mb-6" />
-                <div className="flex gap-8 mb-6">
-                  {[['yes', 'Attending', counts.yes], ['plus1', '+1', counts.plus1], ['no', "Can't Make It", counts.no]].map(([k, l, c]) => (
-                    <div key={k}>
-                      <p className="text-3xl font-bold text-[#1e1a14]" style={DISPLAY}>{c}</p>
-                      <p className="text-xs font-semibold text-[#a08060] uppercase tracking-wide mt-1">{l}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-3">
-                  {responses.map(r => (
-                    <div key={r.id} className="flex items-baseline justify-between">
-                      <p className="text-base font-medium text-[#2c2418]">{r.name}</p>
-                      <span className="text-sm text-[#886c44] font-semibold">
-                        {r.response === 'plus1' ? 'Attending +1' : r.response === 'yes' ? 'Attending' : "Can't Make It"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                {(() => {
+                  const opts = event.options?.length ? event.options : ['Attending', 'Attending +1', "Can't Make It"]
+                  const tally = {}
+                  opts.forEach(o => { tally[o] = 0 })
+                  responses.forEach(r => { if (tally[r.response] !== undefined) tally[r.response]++ })
+                  return (
+                    <>
+                      <div className="flex flex-wrap gap-8 mb-6">
+                        {opts.map(o => (
+                          <div key={o}>
+                            <p className="text-3xl font-bold text-[#1e1a14]" style={DISPLAY}>{tally[o] ?? 0}</p>
+                            <p className="text-xs font-semibold text-[#a08060] uppercase tracking-wide mt-1">{o}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="space-y-3">
+                        {responses.map(r => (
+                          <div key={r.id} className="flex items-baseline justify-between">
+                            <p className="text-base font-medium text-[#2c2418]">{r.name}</p>
+                            <span className="text-sm text-[#886c44] font-semibold">{r.response}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )
+                })()}
               </>
             )}
           </div>
@@ -886,6 +894,7 @@ function EventDetail({ id, onBack }) {
   const [editing,   setEditing]   = useState(false)
   const [saving,    setSaving]    = useState(false)
   const [editForm,  setEditForm]  = useState({ title: '', date: '', time: '', description: '' })
+  const [editOptions, setEditOptions] = useState([])
   const [editSlots, setEditSlots] = useState([])
 
   useEffect(() => {
@@ -894,6 +903,7 @@ function EventDetail({ id, onBack }) {
       if (!ev) { setLoading(false); return }
       setEvent(ev)
       setEditForm({ title: ev.title, date: ev.date || '', time: ev.time || '', description: ev.description || '' })
+      setEditOptions(ev.options?.length ? [...ev.options] : ['', ''])
       if (ev.event_type === 'rsvp') {
         const { data: res } = await supabase.from('vol_event_responses').select('*').eq('event_id', id).order('created_at')
         setResponses(res || [])
@@ -922,6 +932,7 @@ function EventDetail({ id, onBack }) {
       date: editForm.date || null,
       time: editForm.time || null,
       description: editForm.description.trim() || null,
+      options: event.event_type === 'rsvp' ? editOptions.filter(o => o.trim()) : [],
     }).eq('id', id)
     if (event.event_type === 'shift') {
       const valid = editSlots.filter(s => s.time_label?.trim())
@@ -993,6 +1004,27 @@ function EventDetail({ id, onBack }) {
               </div>
               <textarea placeholder="Description (optional)" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
             </div>
+            {!isShift && (
+              <div className="mb-6">
+                <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">RSVP Options</p>
+                <div className="space-y-2 mb-2">
+                  {editOptions.map((opt, i) => (
+                    <div key={i} className="flex gap-2">
+                      <input value={opt} onChange={e => { const o = [...editOptions]; o[i] = e.target.value; setEditOptions(o) }}
+                        placeholder={`Option ${i + 1}`} className={INPUT} style={SANS} />
+                      {editOptions.length > 2 && (
+                        <button onClick={() => setEditOptions(editOptions.filter((_, j) => j !== i))}
+                          className="p-2 text-[#9e8b6f] hover:text-red-500 transition"><X size={16} /></button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => setEditOptions([...editOptions, ''])}
+                  className="flex items-center gap-2 text-sm font-bold text-[#886c44] hover:text-[#6d5436] transition">
+                  <Plus size={14} /> Add Option
+                </button>
+              </div>
+            )}
             {isShift && (
               <div className="mb-6">
                 <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Time Slots</p>
@@ -1370,6 +1402,7 @@ function AdminDashboard() {
   // Event form
   const [eventType, setEventType] = useState('rsvp')
   const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', description: '' })
+  const [rsvpOptions, setRsvpOptions] = useState(['', ''])
   const [slots, setSlots] = useState([{ time_label: '', duration: '', spots: '' }])
 
   // Poll form
@@ -1393,7 +1426,8 @@ function AdminDashboard() {
   const createEvent = async () => {
     if (!eventForm.title.trim()) return
     setSaving('event')
-    const { data: ev } = await supabase.from('vol_events').insert({ ...eventForm, event_type: eventType }).select().single()
+    const options = eventType === 'rsvp' ? rsvpOptions.filter(o => o.trim()) : []
+    const { data: ev } = await supabase.from('vol_events').insert({ ...eventForm, event_type: eventType, options }).select().single()
     if (ev && eventType === 'shift') {
       const validSlots = slots.filter(s => s.time_label.trim())
       if (validSlots.length > 0) {
@@ -1410,6 +1444,7 @@ function AdminDashboard() {
       }
     }
     setEventForm({ title: '', date: '', time: '', description: '' })
+    setRsvpOptions(['', ''])
     setSlots([{ time_label: '', duration: '', spots: '' }])
     await fetchAll(); setSaving(null)
   }
@@ -1526,6 +1561,27 @@ function AdminDashboard() {
                 <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />
               </div>
               <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT} mb-6`} rows={2} style={SANS} />
+              {eventType === 'rsvp' && (
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">RSVP Options</p>
+                  <div className="space-y-2 mb-2">
+                    {rsvpOptions.map((opt, i) => (
+                      <div key={i} className="flex gap-2">
+                        <input value={opt} onChange={e => { const o = [...rsvpOptions]; o[i] = e.target.value; setRsvpOptions(o) }}
+                          placeholder={`Option ${i + 1}`} className={INPUT} style={SANS} />
+                        {rsvpOptions.length > 2 && (
+                          <button onClick={() => setRsvpOptions(rsvpOptions.filter((_, j) => j !== i))}
+                            className="p-2 text-[#9e8b6f] hover:text-red-500 transition"><X size={16} /></button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => setRsvpOptions([...rsvpOptions, ''])}
+                    className="flex items-center gap-2 text-sm font-bold text-[#886c44] hover:text-[#6d5436] transition">
+                    <Plus size={14} /> Add Option
+                  </button>
+                </div>
+              )}
               {eventType === 'shift' && (
                 <div className="mb-6">
                   <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Time Slots</p>
