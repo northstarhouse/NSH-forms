@@ -477,7 +477,7 @@ function EventPage({ id }) {
 
       {/* ── Top bar with logo ── */}
       <div className="bg-[#f5f0e7] border-b border-[#e0d5c0]">
-        <div className="max-w-4xl mx-auto px-6 py-3">
+        <div className="max-w-4xl mx-auto px-6 py-3 flex justify-end">
           <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-24 w-auto" />
         </div>
       </div>
