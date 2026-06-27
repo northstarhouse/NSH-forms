@@ -1512,7 +1512,7 @@ function AdminDashboard() {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <input placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className={`${INPUT} col-span-2`} style={SANS} />
                 <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className={INPUT} style={SANS} />
-                {eventType === 'rsvp' && <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />}
+                <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />
               </div>
               <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT} mb-6`} rows={2} style={SANS} />
               {eventType === 'shift' && (
