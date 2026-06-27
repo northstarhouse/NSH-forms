@@ -18,6 +18,8 @@ const QUESTION_TYPES = [
   { value: 'date',            label: 'Date' },
 ]
 
+const slugify = str => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
 const fmtDate = d => {
   if (!d) return null
   const [y, m, day] = d.split('-').map(Number)
@@ -1416,8 +1418,9 @@ function AdminDashboard() {
     setForms(prev => prev.filter(f => f.id !== id))
   }
 
-  const copyLink = (type, id) => {
-    const link = `${window.location.origin}${window.location.pathname}?view=${type}&id=${id}`
+  const copyLink = (type, id, title) => {
+    const idParam = (type === 'event' && title) ? `${slugify(title)}__${id}` : id
+    const link = `${window.location.origin}${window.location.pathname}?view=${type}&id=${idParam}`
     navigator.clipboard.writeText(link)
     setCopiedId(id); setTimeout(() => setCopiedId(null), 2000)
   }
@@ -1516,7 +1519,7 @@ function AdminDashboard() {
               {events.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No events yet.</p>}
               {events.map(e => (
                 <AdminCard key={e.id} title={e.title} subtitle={e.date || ''} meta={eventMeta(e)}
-                  copied={copiedId === e.id} onCopy={() => copyLink('event', e.id)} onDelete={() => deleteEvent(e.id)}
+                  copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title)} onDelete={() => deleteEvent(e.id)}
                   onClick={() => setDetailView({ type: 'event', id: e.id })} />
               ))}
             </div>
@@ -1660,7 +1663,8 @@ function AdminCard({ title, subtitle, meta, copied, onCopy, onDelete, onClick })
 export default function App() {
   const params = new URLSearchParams(window.location.search)
   const view = params.get('view')
-  const id   = params.get('id')
+  const rawId = params.get('id')
+  const id   = rawId?.includes('__') ? rawId.split('__').pop() : rawId
 
   if (view === 'event' && id) return <EventPage id={id} />
   if (view === 'poll'  && id) return <PollPage id={id} />
