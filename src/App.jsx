@@ -949,7 +949,7 @@ function EventDetail({ id, onBack }) {
               <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} placeholder="Event title" className={INPUT} style={SANS} />
               <div className="grid grid-cols-2 gap-4">
                 <input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} className={INPUT} style={SANS} />
-                {!isShift && <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className={INPUT} style={SANS} />}
+                <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className={INPUT} style={SANS} />
               </div>
               <textarea placeholder="Description (optional)" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
             </div>
