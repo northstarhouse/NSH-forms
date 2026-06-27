@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Copy, ArrowLeft, Check, Plus, X } from 'lucide-react'
 import { supabase } from './supabase'
 
-const SERIF = { fontFamily: "'Cormorant Garamond', serif" }
-const SANS  = { fontFamily: "'Lato', sans-serif" }
+const FONT  = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
+const SERIF = FONT
+const SANS  = FONT
 const INPUT = "w-full p-3 border-2 border-[#d9cec2] rounded-lg text-base font-normal focus:outline-none focus:border-[#886c44] bg-white"
 
 const QUESTION_TYPES = [
@@ -15,6 +16,18 @@ const QUESTION_TYPES = [
   { value: 'rating',          label: 'Rating (1–5)' },
   { value: 'date',            label: 'Date' },
 ]
+
+const fmtDate = d => {
+  if (!d) return null
+  const [y, m, day] = d.split('-').map(Number)
+  return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+const fmtTime = t => {
+  if (!t) return null
+  const [h, min] = t.split(':').map(Number)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  return `${h % 12 || 12}${min ? ':' + String(min).padStart(2, '0') : ''} ${ampm}`
+}
 
 const genId      = () => Math.random().toString(36).slice(2, 10)
 const mkQuestion = (type = 'short_text') => ({ id: genId(), type, label: '', required: false, options: ['', ''] })
@@ -31,8 +44,8 @@ function TopBar({ onBack }) {
           </button>
         ) : (
           <div>
-            <h1 className="text-3xl font-normal text-[#2c2418]" style={SERIF}>North Star House</h1>
-            <p className="text-sm text-[#886c44] font-bold tracking-wide uppercase" style={SANS}>Volunteer Engagement Hub</p>
+            <h1 className="text-2xl font-bold text-[#2c2418]">North Star House</h1>
+            <p className="text-xs text-[#886c44] font-semibold tracking-widest uppercase mt-0.5">Volunteer Engagement Hub</p>
           </div>
         )}
       </div>
@@ -435,53 +448,82 @@ function EventPage({ id }) {
   const counts = { yes: 0, plus1: 0, no: 0 }
   responses.forEach(r => { if (counts[r.response] !== undefined) counts[r.response]++ })
 
+  const dateStr = fmtDate(event.date)
+  const timeStr = fmtTime(event.time)
+
   return (
-    <div className="min-h-screen bg-[#f0e6d8]" style={SANS}>
+    <div className="min-h-screen bg-white" style={FONT}>
       <TopBar onBack={() => window.history.back()} />
-      <div className="max-w-3xl mx-auto px-6 py-14">
 
-        <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">
-          {isShift ? 'Volunteer Sign-Up' : 'Event'}
-        </p>
-        <h1 className="text-6xl font-normal mb-4 text-[#2c2418] leading-tight" style={SERIF}>{event.title}</h1>
-        {(event.date || event.time) && (
-          <p className="text-xl text-[#886c44] font-bold mb-3">
-            {event.date}{event.date && event.time ? ' at ' : ''}{event.time}
+      <div className="px-6 sm:px-10 lg:px-20 xl:px-32 py-12">
+
+        {/* ── Event header ── */}
+        <div className="max-w-xl mb-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#886c44] mb-4">
+            {isShift ? 'Volunteer Sign-Up' : 'Event'}
           </p>
-        )}
-        {event.description && (
-          <p className="text-lg text-[#2c2418] font-normal mb-10 leading-relaxed max-w-2xl">{event.description}</p>
-        )}
+          <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-6">{event.title}</h1>
 
+          <div className="space-y-2">
+            {dateStr && (
+              <div className="flex items-baseline gap-4">
+                <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 w-10 flex-shrink-0">Date</span>
+                <span className="text-base font-medium text-gray-800">{dateStr}</span>
+              </div>
+            )}
+            {timeStr && (
+              <div className="flex items-baseline gap-4">
+                <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 w-10 flex-shrink-0">Time</span>
+                <span className="text-base font-medium text-gray-800">{timeStr}</span>
+              </div>
+            )}
+          </div>
+
+          {event.description && (
+            <p className="text-base text-gray-500 mt-5 leading-relaxed">{event.description}</p>
+          )}
+        </div>
+
+        <div className="border-t border-gray-100 mb-8 max-w-xl" />
+
+        {/* ── RSVP ── */}
         {!isShift && (
           <>
             {submitted ? (
-              <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-white rounded-xl border-2 border-[#886c44]">
-                <Check size={22} className="text-[#886c44] flex-shrink-0" />
-                <p className="text-lg text-[#2c2418] font-bold">Thanks, {name}! Your response has been recorded.</p>
+              <div className="flex items-center gap-3 py-4 px-5 mb-8 bg-green-50 border border-green-200 rounded-xl max-w-xl">
+                <Check size={20} className="text-green-600 flex-shrink-0" />
+                <p className="text-base font-semibold text-green-800">Thanks, {name}! Your response was recorded.</p>
               </div>
             ) : (
-              <div className="mb-12 space-y-4">
-                <p className="text-base text-[#2c2418] font-bold">Enter your name to RSVP:</p>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className={`${INPUT} max-w-sm`} style={SANS} />
-                <div className="flex gap-3 flex-wrap pt-1">
-                  <button onClick={() => handleRSVP('yes')} disabled={!name.trim()} className="px-8 py-4 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-40">Yes</button>
-                  <button onClick={() => handleRSVP('plus1')} disabled={!name.trim()} className="px-8 py-4 bg-white text-[#2c2418] border-2 border-[#886c44] rounded-xl text-base font-bold hover:bg-[#f0ede8] transition disabled:opacity-40">Yes +1</button>
-                  <button onClick={() => handleRSVP('no')} disabled={!name.trim()} className="px-8 py-4 bg-white text-[#2c2418] border-2 border-[#886c44] rounded-xl text-base font-bold hover:bg-[#f0ede8] transition disabled:opacity-40">No</button>
+              <div className="mb-10 max-w-sm space-y-4">
+                <label className="block text-sm font-semibold text-gray-700">Your name</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)}
+                  placeholder="Full name" autoFocus
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:border-[#886c44] focus:ring-1 focus:ring-[#886c44]" />
+                <div className="flex gap-2 pt-1">
+                  <button onClick={() => handleRSVP('yes')} disabled={!name.trim()}
+                    className="flex-1 py-3 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">Yes</button>
+                  <button onClick={() => handleRSVP('plus1')} disabled={!name.trim()}
+                    className="flex-1 py-3 bg-white text-[#886c44] border border-[#886c44] rounded-lg text-sm font-semibold hover:bg-[#fdf8f3] transition disabled:opacity-40">Yes +1</button>
+                  <button onClick={() => handleRSVP('no')} disabled={!name.trim()}
+                    className="flex-1 py-3 bg-white text-gray-500 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-40">No</button>
                 </div>
               </div>
             )}
             {responses.length > 0 && (
-              <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] max-w-lg">
-                <div className="flex gap-8 mb-6 pb-6 border-b-2 border-[#e8e4dc]">
-                  <div className="text-center"><p className="text-3xl font-bold text-[#886c44]">{counts.yes}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">Yes</p></div>
-                  <div className="text-center"><p className="text-3xl font-bold text-[#886c44]">{counts.plus1}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">Yes +1</p></div>
-                  <div className="text-center"><p className="text-3xl font-bold text-[#9e8b6f]">{counts.no}</p><p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide">No</p></div>
+              <div className="border border-gray-100 rounded-xl p-6 max-w-sm">
+                <div className="flex gap-8 mb-5 pb-5 border-b border-gray-100">
+                  {[['yes', 'Yes', counts.yes], ['plus1', 'Yes +1', counts.plus1], ['no', 'No', counts.no]].map(([k, l, c]) => (
+                    <div key={k} className="text-center">
+                      <p className="text-2xl font-bold text-[#886c44]">{c}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-0.5">{l}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {responses.map(r => (
-                    <p key={r.id} className="text-base text-[#2c2418] font-normal">
-                      {r.name} <span className="text-[#886c44] font-bold">— {r.response === 'yes' ? 'Yes' : r.response === 'plus1' ? 'Yes +1' : 'No'}</span>
+                    <p key={r.id} className="text-sm text-gray-700">
+                      {r.name} <span className="text-[#886c44] font-semibold">·{r.response === 'plus1' ? ' Yes +1' : r.response === 'yes' ? ' Yes' : ' No'}</span>
                     </p>
                   ))}
                 </div>
@@ -490,70 +532,74 @@ function EventPage({ id }) {
           </>
         )}
 
+        {/* ── Shift slots ── */}
         {isShift && (
-          <div className="space-y-4">
+          <div className="space-y-3 max-w-xl">
             {slots.length === 0 && (
-              <p className="text-base text-[#9e8b6f] font-bold">No time slots have been added yet.</p>
+              <p className="text-sm text-gray-400 font-medium">No time slots have been added yet.</p>
             )}
             {slots.map(slot => {
-              const slotSignups  = signups[slot.id] || []
-              const spotsLeft    = slot.spots != null ? slot.spots - slotSignups.length : null
-              const isFull       = spotsLeft !== null && spotsLeft <= 0
-              const didSignUp    = signedSlot === slot.id
-              const isExpanded   = expandedSlot === slot.id
+              const slotSignups = signups[slot.id] || []
+              const spotsLeft   = slot.spots != null ? slot.spots - slotSignups.length : null
+              const isFull      = spotsLeft !== null && spotsLeft <= 0
+              const didSignUp   = signedSlot === slot.id
+              const isExpanded  = expandedSlot === slot.id
 
               return (
-                <div key={slot.id} className={`bg-white rounded-xl border-2 p-6 transition-all ${isFull && !didSignUp ? 'border-[#d9cec2]' : didSignUp ? 'border-[#886c44]' : 'border-[#e8e4dc]'}`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
+                <div key={slot.id}
+                  className={`rounded-xl border p-5 transition-all ${isFull && !didSignUp ? 'bg-gray-50 border-gray-150' : didSignUp ? 'bg-[#fdf8f3] border-[#886c44]' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
                       {slot.time_label && (
-                        <p className="text-2xl font-normal text-[#2c2418] mb-2" style={SERIF}>{slot.time_label}</p>
+                        <p className={`text-lg font-semibold leading-tight ${isFull && !didSignUp ? 'text-gray-400' : 'text-gray-900'}`}>
+                          {slot.time_label}
+                        </p>
                       )}
-                      <div className="flex flex-wrap gap-4 mb-3">
-                        {slot.duration && <span className="text-base font-bold text-[#886c44]">{slot.duration}</span>}
-                        {slot.role     && <span className="text-base font-bold text-[#886c44]">{slot.role}</span>}
+                      <div className="flex flex-wrap items-center gap-3 mt-1">
+                        {slot.role && (
+                          <span className={`text-sm font-medium ${isFull && !didSignUp ? 'text-gray-400' : 'text-[#886c44]'}`}>{slot.role}</span>
+                        )}
                         {spotsLeft !== null && !isFull && (
-                          <span className="text-base font-bold text-[#9e8b6f]">
-                            {`${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
-                          </span>
+                          <span className="text-xs font-semibold text-gray-400">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>
                         )}
                       </div>
                       {slotSignups.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5 mt-2">
                           {slotSignups.map(s => (
-                            <span key={s.id} className="px-3 py-1 bg-[#f0e6d8] text-[#2c2418] text-sm font-bold rounded-full">{s.name}</span>
+                            <span key={s.id} className="px-2.5 py-0.5 bg-[#f0e6d8] text-[#6d5436] text-xs font-semibold rounded-full">{s.name}</span>
                           ))}
                         </div>
                       )}
                     </div>
-                    <div className="flex-shrink-0 pt-1">
+                    <div className="flex-shrink-0">
                       {didSignUp ? (
-                        <div className="flex items-center gap-2 text-[#886c44]">
-                          <Check size={20} /><span className="text-base font-bold">Signed up!</span>
+                        <div className="flex items-center gap-1.5 text-[#886c44]">
+                          <Check size={16} /><span className="text-sm font-semibold">Signed up</span>
                         </div>
                       ) : isFull ? (
-                        <span className="px-4 py-2 bg-[#e8e4dc] text-[#9e8b6f] rounded-lg text-sm font-bold uppercase tracking-widest">Filled</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-gray-400 bg-gray-100 px-3 py-1.5 rounded-md">Filled</span>
                       ) : isExpanded ? (
-                        <button onClick={() => { setExpandedSlot(null); setSlotName('') }} className="text-sm font-bold text-[#9e8b6f] hover:text-[#2c2418] transition">Cancel</button>
+                        <button onClick={() => { setExpandedSlot(null); setSlotName('') }}
+                          className="text-sm font-semibold text-gray-400 hover:text-gray-700 transition">Cancel</button>
                       ) : (
                         <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
-                          className="px-5 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition whitespace-nowrap">
-                          Sign Up for Shift
+                          className="px-4 py-2 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition whitespace-nowrap">
+                          Sign Up
                         </button>
                       )}
                     </div>
                   </div>
+
                   {isExpanded && (
-                    <div className="mt-5 pt-5 border-t-2 border-[#f0e6d8] flex gap-3">
-                      <input
-                        type="text" value={slotName} onChange={e => setSlotName(e.target.value)}
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
+                      <input type="text" value={slotName} onChange={e => setSlotName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleShiftSignup(slot.id)}
-                        placeholder="Enter your full name" autoFocus
-                        className={`${INPUT} flex-1`} style={SANS}
-                      />
+                        placeholder="Your full name" autoFocus
+                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-base focus:outline-none focus:border-[#886c44] focus:ring-1 focus:ring-[#886c44]" />
                       <button onClick={() => handleShiftSignup(slot.id)} disabled={!slotName.trim()}
-                        className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-40 whitespace-nowrap"
-                        style={SANS}>Confirm</button>
+                        className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40 whitespace-nowrap">
+                        Confirm
+                      </button>
                     </div>
                   )}
                 </div>
