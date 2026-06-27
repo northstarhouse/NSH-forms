@@ -476,9 +476,8 @@ function EventPage({ id }) {
     <div className="min-h-screen bg-[#f5f0e7]" style={FONT}>
 
       {/* ── Top bar with logo ── */}
-      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0] px-6 sm:px-12 lg:px-20 xl:px-28 py-3 flex items-center justify-between">
-        <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-16 w-auto" />
-        <p className="text-sm text-[#a08060] font-medium hidden sm:block">Grass Valley, California</p>
+      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0] px-6 sm:px-12 lg:px-20 xl:px-28 py-3">
+        <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-24 w-auto" />
       </div>
 
       {/* ── Event header ── */}
