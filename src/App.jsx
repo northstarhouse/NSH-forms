@@ -476,12 +476,14 @@ function EventPage({ id }) {
     <div className="min-h-screen bg-[#f5f0e7]" style={FONT}>
 
       {/* ── Top bar with logo ── */}
-      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0] px-6 sm:px-12 lg:px-20 xl:px-28 py-3">
-        <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-24 w-auto" />
+      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0]">
+        <div className="max-w-4xl mx-auto px-6 py-3">
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-24 w-auto" />
+        </div>
       </div>
 
       {/* ── Event header ── */}
-      <div className="px-6 sm:px-12 lg:px-20 xl:px-28 pt-10 pb-8 max-w-4xl">
+      <div className="max-w-4xl mx-auto px-6 pt-10 pb-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#886c44] mb-5">
           {isShift ? 'Volunteer Sign-Up' : 'Event'}
         </p>
@@ -511,7 +513,7 @@ function EventPage({ id }) {
       </div>
 
       {/* ── Body ── */}
-      <div className="px-6 sm:px-12 lg:px-20 xl:px-28 pb-14">
+      <div className="max-w-4xl mx-auto px-6 pb-14">
 
         {/* RSVP */}
         {!isShift && (
