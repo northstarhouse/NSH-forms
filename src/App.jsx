@@ -670,6 +670,47 @@ function PollPage({ id }) {
   )
 }
 
+// ─── Admin: Slot card (reused in create + edit) ────────────────────────────────
+
+function SlotCard({ slot, index, total, onChange, onRemove }) {
+  return (
+    <div className="bg-[#faf8f4] border-2 border-[#e8e4dc] rounded-xl p-4">
+      <div className="flex justify-between items-center mb-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-[#9e8b6f]">Slot {index + 1}</p>
+        {total > 1 && (
+          <button onClick={onRemove} className="text-[#9e8b6f] hover:text-red-500 transition">
+            <X size={16} />
+          </button>
+        )}
+      </div>
+      <input
+        placeholder="Time (e.g. 9:00 AM – 11:00 AM)"
+        value={slot.time_label || ''}
+        onChange={e => onChange('time_label', e.target.value)}
+        className={`${INPUT} mb-3`}
+        style={SANS}
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <input
+          placeholder="Role (e.g. Kitchen Help)"
+          value={slot.role || ''}
+          onChange={e => onChange('role', e.target.value)}
+          className={INPUT}
+          style={SANS}
+        />
+        <input
+          type="number"
+          placeholder="Max spots (optional)"
+          value={slot.spots || ''}
+          onChange={e => onChange('spots', e.target.value)}
+          className={INPUT}
+          style={SANS}
+        />
+      </div>
+    </div>
+  )
+}
+
 // ─── Admin: Question editor row ────────────────────────────────────────────────
 
 function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove }) {
@@ -743,6 +784,462 @@ function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove }) {
   )
 }
 
+// ─── Admin: Event detail + edit ────────────────────────────────────────────────
+
+function EventDetail({ id, onBack }) {
+  const [event,     setEvent]     = useState(null)
+  const [slots,     setSlots]     = useState([])
+  const [responses, setResponses] = useState([])
+  const [signups,   setSignups]   = useState({})
+  const [loading,   setLoading]   = useState(true)
+  const [editing,   setEditing]   = useState(false)
+  const [saving,    setSaving]    = useState(false)
+  const [editForm,  setEditForm]  = useState({ title: '', date: '', time: '', description: '' })
+  const [editSlots, setEditSlots] = useState([])
+
+  useEffect(() => {
+    async function load() {
+      const { data: ev } = await supabase.from('vol_events').select('*').eq('id', id).single()
+      if (!ev) { setLoading(false); return }
+      setEvent(ev)
+      setEditForm({ title: ev.title, date: ev.date || '', time: ev.time || '', description: ev.description || '' })
+      if (ev.event_type === 'rsvp') {
+        const { data: res } = await supabase.from('vol_event_responses').select('*').eq('event_id', id).order('created_at')
+        setResponses(res || [])
+      } else {
+        const { data: sl } = await supabase.from('vol_shift_slots').select('*').eq('event_id', id).order('sort_order')
+        const slotList = sl || []
+        setSlots(slotList)
+        setEditSlots(slotList.map(s => ({ ...s })))
+        if (slotList.length) {
+          const { data: sg } = await supabase.from('vol_slot_signups').select('*').in('slot_id', slotList.map(s => s.id)).order('created_at')
+          const grouped = {}
+          slotList.forEach(s => { grouped[s.id] = [] })
+          ;(sg || []).forEach(s => { if (grouped[s.slot_id]) grouped[s.slot_id].push(s) })
+          setSignups(grouped)
+        }
+      }
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  const handleSave = async () => {
+    setSaving(true)
+    await supabase.from('vol_events').update({
+      title: editForm.title.trim(),
+      date: editForm.date || null,
+      time: editForm.time || null,
+      description: editForm.description.trim() || null,
+    }).eq('id', id)
+    if (event.event_type === 'shift') {
+      await supabase.from('vol_shift_slots').delete().eq('event_id', id)
+      const valid = editSlots.filter(s => s.time_label?.trim())
+      if (valid.length) {
+        await supabase.from('vol_shift_slots').insert(
+          valid.map((s, i) => ({ event_id: id, time_label: s.time_label, role: s.role || null, spots: s.spots ? Number(s.spots) : null, sort_order: i }))
+        )
+      }
+      const { data: sl } = await supabase.from('vol_shift_slots').select('*').eq('event_id', id).order('sort_order')
+      const slotList = sl || []
+      setSlots(slotList)
+      setEditSlots(slotList.map(s => ({ ...s })))
+    }
+    const { data: ev } = await supabase.from('vol_events').select('*').eq('id', id).single()
+    setEvent(ev)
+    setSaving(false)
+    setEditing(false)
+  }
+
+  if (loading) return <LoadingScreen />
+  if (!event)  return <NotFound />
+
+  const isShift = event.event_type === 'shift'
+  const rsvpCounts = { yes: 0, plus1: 0, no: 0 }
+  responses.forEach(r => { if (rsvpCounts[r.response] !== undefined) rsvpCounts[r.response]++ })
+
+  return (
+    <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
+      <TopBar />
+      <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
+        <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm mb-8 hover:text-[#6d5436] transition">
+          <ArrowLeft size={16} /> Back to dashboard
+        </button>
+
+        {editing ? (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-6">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">Edit Event</p>
+            <div className="space-y-4 mb-6">
+              <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} placeholder="Event title" className={INPUT} style={SANS} />
+              <div className="grid grid-cols-2 gap-4">
+                <input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} className={INPUT} style={SANS} />
+                {!isShift && <input type="time" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className={INPUT} style={SANS} />}
+              </div>
+              <textarea placeholder="Description (optional)" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
+            </div>
+            {isShift && (
+              <div className="mb-6">
+                <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Time Slots</p>
+                <div className="space-y-3 mb-3">
+                  {editSlots.map((slot, i) => (
+                    <SlotCard key={i} slot={slot} index={i} total={editSlots.length}
+                      onChange={(field, val) => { const s = [...editSlots]; s[i] = { ...s[i], [field]: val }; setEditSlots(s) }}
+                      onRemove={() => setEditSlots(editSlots.filter((_, idx) => idx !== i))} />
+                  ))}
+                </div>
+                <button onClick={() => setEditSlots([...editSlots, { time_label: '', role: '', spots: '' }])}
+                  className="flex items-center gap-2 text-sm text-[#886c44] font-bold hover:text-[#6d5436] transition">
+                  <Plus size={14} /> Add time slot
+                </button>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button onClick={handleSave} disabled={saving} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-sm font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+              <button onClick={() => { setEditing(false); setEditForm({ title: event.title, date: event.date || '', time: event.time || '', description: event.description || '' }); setEditSlots(slots.map(s => ({ ...s }))) }}
+                className="px-6 py-3 rounded-xl text-sm font-bold text-[#9e8b6f] hover:bg-[#f0e6d8] transition">
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-[#886c44] font-bold mb-2">{isShift ? 'Shift Sign-up' : 'RSVP Event'}</p>
+              <h2 className="text-4xl font-normal text-[#2c2418] mb-2" style={SERIF}>{event.title}</h2>
+              {(event.date || event.time) && <p className="text-base text-[#886c44] font-bold mb-2">{event.date}{event.date && event.time ? ' · ' : ''}{event.time}</p>}
+              {event.description && <p className="text-base text-[#2c2418]">{event.description}</p>}
+            </div>
+            <button onClick={() => setEditing(true)}
+              className="ml-6 mt-1 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition flex-shrink-0">
+              Edit
+            </button>
+          </div>
+        )}
+
+        {!isShift && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc]">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">RSVPs ({responses.length})</p>
+            {responses.length === 0 ? (
+              <p className="text-[#9e8b6f] font-bold">No RSVPs yet.</p>
+            ) : (
+              <>
+                <div className="flex gap-8 mb-6">
+                  {[['yes', 'Yes'], ['plus1', '+1'], ['no', 'No']].map(([key, label]) => (
+                    <div key={key} className="text-center">
+                      <p className="text-3xl font-normal text-[#2c2418]" style={SERIF}>{rsvpCounts[key]}</p>
+                      <p className="text-xs font-bold text-[#886c44] uppercase tracking-wide">{label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-1">
+                  {responses.map(r => (
+                    <div key={r.id} className="flex justify-between items-center py-2 border-b border-[#e8e4dc] last:border-0">
+                      <p className="text-base text-[#2c2418] font-bold">{r.name}</p>
+                      <p className="text-sm text-[#886c44] font-bold capitalize">{r.response === 'plus1' ? '+1' : r.response}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {isShift && (
+          <div className="space-y-4">
+            {slots.length === 0 && <p className="text-[#9e8b6f] font-bold">No time slots yet.</p>}
+            {slots.map(slot => {
+              const su = signups[slot.id] || []
+              return (
+                <div key={slot.id} className="bg-white p-6 rounded-xl border-2 border-[#e8e4dc]">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="text-lg font-bold text-[#2c2418]">{slot.time_label}</p>
+                      {slot.role && <p className="text-sm text-[#886c44] font-bold">{slot.role}</p>}
+                    </div>
+                    <p className="text-sm font-bold text-[#9e8b6f]">{su.length}{slot.spots ? `/${slot.spots}` : ''} signed up</p>
+                  </div>
+                  {su.length === 0
+                    ? <p className="text-sm text-[#9e8b6f] font-bold">No signups yet.</p>
+                    : <div className="space-y-1">{su.map(s => <p key={s.id} className="text-base text-[#2c2418]">{s.name}</p>)}</div>
+                  }
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Admin: Poll detail + edit ──────────────────────────────────────────────────
+
+function PollDetail({ id, onBack }) {
+  const [poll,    setPoll]    = useState(null)
+  const [votes,   setVotes]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [saving,  setSaving]  = useState(false)
+  const [editPoll, setEditPoll] = useState({ question: '', options: [] })
+
+  useEffect(() => {
+    async function load() {
+      const { data: po } = await supabase.from('vol_polls').select('*').eq('id', id).single()
+      if (!po) { setLoading(false); return }
+      setPoll(po)
+      setEditPoll({ question: po.question, options: [...po.options] })
+      const { data: vt } = await supabase.from('vol_poll_votes').select('*').eq('poll_id', id).order('created_at')
+      setVotes(vt || [])
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  const handleSave = async () => {
+    setSaving(true)
+    const opts = editPoll.options.filter(o => o.trim())
+    await supabase.from('vol_polls').update({ question: editPoll.question.trim(), options: opts }).eq('id', id)
+    const { data: po } = await supabase.from('vol_polls').select('*').eq('id', id).single()
+    setPoll(po)
+    setSaving(false)
+    setEditing(false)
+  }
+
+  if (loading) return <LoadingScreen />
+  if (!poll)   return <NotFound />
+
+  const total  = votes.length
+  const counts = {}
+  poll.options.forEach(o => { counts[o] = 0 })
+  votes.forEach(v => { if (counts[v.option] !== undefined) counts[v.option]++ })
+
+  return (
+    <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
+      <TopBar />
+      <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
+        <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm mb-8 hover:text-[#6d5436] transition">
+          <ArrowLeft size={16} /> Back to dashboard
+        </button>
+
+        {editing ? (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-6">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">Edit Poll</p>
+            <input value={editPoll.question} onChange={e => setEditPoll({ ...editPoll, question: e.target.value })} placeholder="Poll question" className={`${INPUT} mb-4`} style={SANS} />
+            <div className="space-y-3 mb-3">
+              {editPoll.options.map((opt, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input placeholder={`Option ${i + 1}`} value={opt}
+                    onChange={e => { const o = [...editPoll.options]; o[i] = e.target.value; setEditPoll({ ...editPoll, options: o }) }}
+                    className={`${INPUT} flex-1`} style={SANS} />
+                  {editPoll.options.length > 2 && (
+                    <button onClick={() => setEditPoll({ ...editPoll, options: editPoll.options.filter((_, idx) => idx !== i) })}
+                      className="text-[#9e8b6f] hover:text-red-500 transition flex-shrink-0"><X size={16} /></button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setEditPoll({ ...editPoll, options: [...editPoll.options, ''] })}
+              className="flex items-center gap-1 text-sm text-[#886c44] font-bold hover:text-[#6d5436] transition mb-6">
+              <Plus size={14} /> Add option
+            </button>
+            <div className="flex gap-3">
+              <button onClick={handleSave} disabled={saving} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-sm font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+              <button onClick={() => { setEditing(false); setEditPoll({ question: poll.question, options: [...poll.options] }) }}
+                className="px-6 py-3 rounded-xl text-sm font-bold text-[#9e8b6f] hover:bg-[#f0e6d8] transition">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-[#886c44] font-bold mb-2">Poll</p>
+              <h2 className="text-4xl font-normal text-[#2c2418]" style={SERIF}>{poll.question}</h2>
+            </div>
+            <button onClick={() => setEditing(true)}
+              className="ml-6 mt-1 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition flex-shrink-0">
+              Edit
+            </button>
+          </div>
+        )}
+
+        <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
+          <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">Results — {total} vote{total !== 1 ? 's' : ''}</p>
+          {total === 0 ? <p className="text-[#9e8b6f] font-bold">No votes yet.</p> : (
+            <div className="space-y-4">
+              {poll.options.map((opt, i) => {
+                const c = counts[opt] || 0
+                const pct = total > 0 ? Math.round((c / total) * 100) : 0
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-[#2c2418] font-bold">{opt}</span>
+                      <span className="text-[#886c44] font-bold">{c} ({pct}%)</span>
+                    </div>
+                    <div className="h-2 bg-[#f0e6d8] rounded-full">
+                      <div className="h-2 bg-[#886c44] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {votes.length > 0 && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc]">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-4">All Votes</p>
+            <div className="space-y-1">
+              {votes.map(v => (
+                <div key={v.id} className="flex justify-between items-center py-2 border-b border-[#e8e4dc] last:border-0">
+                  <p className="text-base text-[#2c2418] font-bold">{v.name}</p>
+                  <p className="text-sm text-[#886c44] font-bold">{v.option}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Admin: Form detail + edit ──────────────────────────────────────────────────
+
+function FormDetail({ id, onBack }) {
+  const [form,      setForm]      = useState(null)
+  const [responses, setResponses] = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [editing,   setEditing]   = useState(false)
+  const [saving,    setSaving]    = useState(false)
+  const [editMeta,  setEditMeta]  = useState({ title: '', description: '' })
+  const [editFields, setEditFields] = useState([])
+
+  useEffect(() => {
+    async function load() {
+      const { data: fo } = await supabase.from('nsh_forms').select('*').eq('id', id).single()
+      if (!fo) { setLoading(false); return }
+      setForm(fo)
+      setEditMeta({ title: fo.title, description: fo.description || '' })
+      setEditFields(fo.fields || [])
+      const { data: res } = await supabase.from('nsh_form_responses').select('*').eq('form_id', id).order('created_at', { ascending: false })
+      setResponses(res || [])
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  const handleSave = async () => {
+    setSaving(true)
+    const fields = editFields
+      .filter(q => q.label.trim())
+      .map(({ id, type, label, required, options }) => ({
+        id, type, label: label.trim(), required,
+        ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
+      }))
+    await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, fields }).eq('id', id)
+    const { data: fo } = await supabase.from('nsh_forms').select('*').eq('id', id).single()
+    setForm(fo)
+    setEditFields(fo.fields || [])
+    setSaving(false)
+    setEditing(false)
+  }
+
+  if (loading) return <LoadingScreen />
+  if (!form)   return <NotFound />
+
+  return (
+    <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
+      <TopBar />
+      <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
+        <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm mb-8 hover:text-[#6d5436] transition">
+          <ArrowLeft size={16} /> Back to dashboard
+        </button>
+
+        {editing ? (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-6">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">Edit Form</p>
+            <div className="space-y-4 mb-6">
+              <input value={editMeta.title} onChange={e => setEditMeta({ ...editMeta, title: e.target.value })} placeholder="Form title" className={INPUT} style={SANS} />
+              <textarea placeholder="Description (optional)" value={editMeta.description} onChange={e => setEditMeta({ ...editMeta, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
+            </div>
+            <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
+            <div className="space-y-3 mb-4">
+              {editFields.map((q, i) => (
+                <QuestionEditor key={q.id} question={q} index={i}
+                  onUpdate={updated => { const qs = [...editFields]; qs[i] = updated; setEditFields(qs) }}
+                  onRemove={() => setEditFields(editFields.filter((_, idx) => idx !== i))}
+                  canRemove={editFields.length > 1} />
+              ))}
+            </div>
+            <button onClick={() => setEditFields([...editFields, mkQuestion()])}
+              className="flex items-center gap-2 text-sm text-[#886c44] font-bold hover:text-[#6d5436] transition mb-6">
+              <Plus size={14} /> Add question
+            </button>
+            <div className="flex gap-3">
+              <button onClick={handleSave} disabled={saving} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-sm font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+              <button onClick={() => { setEditing(false); setEditMeta({ title: form.title, description: form.description || '' }); setEditFields(form.fields || []) }}
+                className="px-6 py-3 rounded-xl text-sm font-bold text-[#9e8b6f] hover:bg-[#f0e6d8] transition">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-[#886c44] font-bold mb-2">Form</p>
+              <h2 className="text-4xl font-normal text-[#2c2418] mb-1" style={SERIF}>{form.title}</h2>
+              {form.description && <p className="text-base text-[#2c2418] mt-1">{form.description}</p>}
+              <p className="text-sm text-[#886c44] font-bold mt-2">
+                {form.fields?.length ?? 0} question{(form.fields?.length ?? 0) !== 1 ? 's' : ''} · {responses.length} response{responses.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+            <button onClick={() => setEditing(true)}
+              className="ml-6 mt-1 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition flex-shrink-0">
+              Edit
+            </button>
+          </div>
+        )}
+
+        {!editing && responses.length > 0 && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc]">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">Responses</p>
+            <div className="space-y-6">
+              {responses.map(r => (
+                <div key={r.id} className="pb-6 border-b border-[#e8e4dc] last:border-0 last:pb-0">
+                  <p className="text-xs text-[#9e8b6f] font-bold mb-3">
+                    {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  </p>
+                  <div className="space-y-3">
+                    {(form.fields || []).map(field => {
+                      const ans = r.answers?.[field.id]
+                      if (ans === undefined || ans === null || ans === '') return null
+                      return (
+                        <div key={field.id}>
+                          <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{field.label}</p>
+                          <p className="text-base text-[#2c2418]">{Array.isArray(ans) ? ans.join(', ') : String(ans)}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!editing && responses.length === 0 && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc]">
+            <p className="text-[#9e8b6f] font-bold">No responses yet.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Admin Dashboard ───────────────────────────────────────────────────────────
 
 function AdminDashboard() {
@@ -751,7 +1248,8 @@ function AdminDashboard() {
   const [forms, setForms]   = useState([])
   const [copiedId, setCopiedId] = useState(null)
   const [active, setActive] = useState(null)
-  const [saving, setSaving] = useState(null)
+  const [saving,     setSaving]     = useState(null)
+  const [detailView, setDetailView] = useState(null)
 
   // Event form
   const [eventType, setEventType] = useState('rsvp')
@@ -869,6 +1367,10 @@ function AdminDashboard() {
     return `RSVP · ${n} response${n !== 1 ? 's' : ''}`
   }
 
+  if (detailView?.type === 'event') return <EventDetail id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
+  if (detailView?.type === 'poll')  return <PollDetail  id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
+  if (detailView?.type === 'form')  return <FormDetail  id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
+
   return (
     <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
       <TopBar />
@@ -912,20 +1414,17 @@ function AdminDashboard() {
                   <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Time Slots</p>
                   <div className="space-y-3 mb-3">
                     {slots.map((slot, i) => (
-                      <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                        <input placeholder="Time (e.g. 9am – 11am)" value={slot.time_label} onChange={e => updateSlot(i, 'time_label', e.target.value)} className={`${INPUT} col-span-4`} style={SANS} />
-                        <input placeholder="Duration" value={slot.duration} onChange={e => updateSlot(i, 'duration', e.target.value)} className={`${INPUT} col-span-3`} style={SANS} />
-                        <input placeholder="Role" value={slot.role} onChange={e => updateSlot(i, 'role', e.target.value)} className={`${INPUT} col-span-3`} style={SANS} />
-                        <input type="number" placeholder="Spots" value={slot.spots} onChange={e => updateSlot(i, 'spots', e.target.value)} className={`${INPUT} col-span-1`} style={SANS} />
-                        {slots.length > 1 && (
-                          <button onClick={() => setSlots(slots.filter((_, idx) => idx !== i))} className="col-span-1 flex justify-center text-[#9e8b6f] hover:text-red-500 transition">
-                            <X size={18} />
-                          </button>
-                        )}
-                      </div>
+                      <SlotCard
+                        key={i}
+                        slot={slot}
+                        index={i}
+                        total={slots.length}
+                        onChange={(field, val) => updateSlot(i, field, val)}
+                        onRemove={() => setSlots(slots.filter((_, idx) => idx !== i))}
+                      />
                     ))}
                   </div>
-                  <button onClick={() => setSlots([...slots, { time_label: '', duration: '', role: '', spots: '' }])}
+                  <button onClick={() => setSlots([...slots, { time_label: '', role: '', spots: '' }])}
                     className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition">
                     <Plus size={16} /> Add time slot
                   </button>
@@ -939,7 +1438,8 @@ function AdminDashboard() {
               {events.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No events yet.</p>}
               {events.map(e => (
                 <AdminCard key={e.id} title={e.title} subtitle={e.date || ''} meta={eventMeta(e)}
-                  copied={copiedId === e.id} onCopy={() => copyLink('event', e.id)} onDelete={() => deleteEvent(e.id)} />
+                  copied={copiedId === e.id} onCopy={() => copyLink('event', e.id)} onDelete={() => deleteEvent(e.id)}
+                  onClick={() => setDetailView({ type: 'event', id: e.id })} />
               ))}
             </div>
           </div>
@@ -973,7 +1473,8 @@ function AdminDashboard() {
               {polls.map(p => (
                 <AdminCard key={p.id} title={p.question}
                   meta={`${p.vol_poll_votes?.[0]?.count ?? 0} vote${(p.vol_poll_votes?.[0]?.count ?? 0) !== 1 ? 's' : ''}`}
-                  copied={copiedId === p.id} onCopy={() => copyLink('poll', p.id)} onDelete={() => deletePoll(p.id)} />
+                  copied={copiedId === p.id} onCopy={() => copyLink('poll', p.id)} onDelete={() => deletePoll(p.id)}
+                  onClick={() => setDetailView({ type: 'poll', id: p.id })} />
               ))}
             </div>
           </div>
@@ -1040,6 +1541,7 @@ function AdminDashboard() {
                   copied={copiedId === f.id}
                   onCopy={() => copyLink('form', f.id)}
                   onDelete={() => deleteForm(f.id)}
+                  onClick={() => setDetailView({ type: 'form', id: f.id })}
                 />
               ))}
             </div>
@@ -1056,14 +1558,14 @@ function AdminDashboard() {
   )
 }
 
-function AdminCard({ title, subtitle, meta, copied, onCopy, onDelete }) {
+function AdminCard({ title, subtitle, meta, copied, onCopy, onDelete, onClick }) {
   return (
-    <div className="flex justify-between items-center p-5 bg-white border-2 border-[#e8e4dc] rounded-xl hover:border-[#886c44] transition">
-      <div className="flex-1 min-w-0 mr-4">
+    <div className="flex justify-between items-center bg-white border-2 border-[#e8e4dc] rounded-xl hover:border-[#886c44] transition overflow-hidden">
+      <button onClick={onClick} className="flex-1 min-w-0 text-left px-5 py-4 hover:bg-[#faf8f4] transition">
         <p className="font-normal text-[#2c2418] truncate text-lg" style={SERIF}>{title}</p>
         {subtitle && <p className="text-sm text-[#9e8b6f] font-bold mt-0.5">{subtitle}</p>}
         {meta    && <p className="text-sm text-[#886c44] font-bold mt-0.5">{meta}</p>}
-      </div>
+      </button>
       <div className="flex items-center gap-2 flex-shrink-0">
         <button onClick={onCopy} className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-[#f0e6d8] transition text-sm font-bold" style={{ color: copied ? '#886c44' : '#9e8b6f' }}>
           {copied ? <Check size={15} /> : <Copy size={15} />}
