@@ -568,7 +568,7 @@ function EventPage({ id }) {
 
         {/* Shift slots */}
         {isShift && (
-          <div className="max-w-2xl">
+          <div className="max-w-2xl bg-white rounded-2xl px-8 py-8">
             {slots.length === 0 && (
               <p className="text-sm text-[#a08060]">No time slots added yet.</p>
             )}
@@ -601,7 +601,7 @@ function EventPage({ id }) {
                           <p className="text-sm text-[#5a4a35] leading-relaxed mb-2">{slot.duration}</p>
                         )}
                         {spotsLeft !== null && !isFull && (
-                          <p className="text-sm text-[#a08060]">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</p>
+                          <p className="text-sm text-[#a08060]">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} open</p>
                         )}
                       </div>
 
