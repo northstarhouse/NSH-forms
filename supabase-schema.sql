@@ -93,3 +93,37 @@ create policy "public insert" on vol_poll_votes       for insert with check (tru
 do $$ begin alter publication supabase_realtime add table vol_event_responses; exception when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table vol_slot_signups;    exception when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table vol_poll_votes;      exception when others then null; end $$;
+
+-- ─── Custom Forms ──────────────────────────────────────────────────────────────
+-- Run this block independently if the vol_* tables already exist.
+
+drop table if exists nsh_form_responses cascade;
+drop table if exists nsh_forms cascade;
+
+-- Form definitions: title, optional description, and a JSONB array of field definitions
+-- Each field: { id, type, label, required, options? }
+-- Field types: short_text | long_text | multiple_choice | checkboxes | yes_no | rating | date
+create table nsh_forms (
+  id          uuid default gen_random_uuid() primary key,
+  title       text not null,
+  description text,
+  fields      jsonb not null default '[]',
+  created_at  timestamptz default now()
+);
+
+-- Form responses: one row per submission, answers stored as { fieldId: value }
+create table nsh_form_responses (
+  id         uuid default gen_random_uuid() primary key,
+  form_id    uuid references nsh_forms(id) on delete cascade,
+  answers    jsonb not null default '{}',
+  created_at timestamptz default now()
+);
+
+alter table nsh_forms          enable row level security;
+alter table nsh_form_responses enable row level security;
+
+create policy "public read"   on nsh_forms          for select using (true);
+create policy "public insert" on nsh_forms          for insert with check (true);
+create policy "public delete" on nsh_forms          for delete using (true);
+create policy "public read"   on nsh_form_responses for select using (true);
+create policy "public insert" on nsh_form_responses for insert with check (true);

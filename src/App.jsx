@@ -6,7 +6,20 @@ const SERIF = { fontFamily: "'Cormorant Garamond', serif" }
 const SANS  = { fontFamily: "'Lato', sans-serif" }
 const INPUT = "w-full p-3 border-2 border-[#d9cec2] rounded-lg text-base font-normal focus:outline-none focus:border-[#886c44] bg-white"
 
-// ─── Shared UI ────────────────────────────────────────────────────────────────
+const QUESTION_TYPES = [
+  { value: 'short_text',      label: 'Short answer' },
+  { value: 'long_text',       label: 'Paragraph' },
+  { value: 'multiple_choice', label: 'Multiple choice' },
+  { value: 'checkboxes',      label: 'Checkboxes' },
+  { value: 'yes_no',          label: 'Yes / No' },
+  { value: 'rating',          label: 'Rating (1–5)' },
+  { value: 'date',            label: 'Date' },
+]
+
+const genId      = () => Math.random().toString(36).slice(2, 10)
+const mkQuestion = (type = 'short_text') => ({ id: genId(), type, label: '', required: false, options: ['', ''] })
+
+// ─── Shared UI ─────────────────────────────────────────────────────────────────
 
 function TopBar({ onBack }) {
   return (
@@ -44,18 +57,320 @@ function NotFound() {
   )
 }
 
-// ─── Volunteer: Event Page (handles both RSVP and shift) ──────────────────────
+// ─── Form: Question input renderer ────────────────────────────────────────────
+
+function QuestionInput({ question: q, value, onChange }) {
+  switch (q.type) {
+    case 'short_text':
+      return <input type="text" value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Your answer" className={INPUT} style={SANS} />
+
+    case 'long_text':
+      return <textarea value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Your answer" className={INPUT} rows={4} style={SANS} />
+
+    case 'multiple_choice':
+      return (
+        <div className="space-y-2">
+          {(q.options || []).map((opt, i) => (
+            <button key={i} type="button" onClick={() => onChange(opt)}
+              className={`w-full max-w-lg p-4 text-left border-2 rounded-xl text-base font-bold transition ${value === opt ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#d9cec2] bg-white text-[#2c2418] hover:border-[#886c44]'}`}
+              style={SANS}>{opt}</button>
+          ))}
+        </div>
+      )
+
+    case 'checkboxes': {
+      const arr = Array.isArray(value) ? value : []
+      return (
+        <div className="space-y-2">
+          {(q.options || []).map((opt, i) => {
+            const checked = arr.includes(opt)
+            return (
+              <button key={i} type="button"
+                onClick={() => onChange(checked ? arr.filter(v => v !== opt) : [...arr, opt])}
+                className={`w-full max-w-lg p-4 text-left border-2 rounded-xl text-base font-bold transition flex items-center gap-3 ${checked ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#d9cec2] bg-white text-[#2c2418] hover:border-[#886c44]'}`}
+                style={SANS}>
+                <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#d9cec2]'}`}>
+                  {checked && <Check size={12} className="text-white" />}
+                </div>
+                {opt}
+              </button>
+            )
+          })}
+        </div>
+      )
+    }
+
+    case 'yes_no':
+      return (
+        <div className="flex gap-3">
+          {['Yes', 'No'].map(opt => (
+            <button key={opt} type="button" onClick={() => onChange(opt)}
+              className={`px-8 py-4 rounded-xl text-base font-bold border-2 transition ${value === opt ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#d9cec2] text-[#2c2418] hover:border-[#886c44]'}`}
+              style={SANS}>{opt}</button>
+          ))}
+        </div>
+      )
+
+    case 'rating':
+      return (
+        <div className="flex gap-2 flex-wrap">
+          {[1, 2, 3, 4, 5].map(n => (
+            <button key={n} type="button" onClick={() => onChange(String(n))}
+              className={`w-14 h-14 rounded-xl border-2 text-base font-bold transition ${String(n) === value ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#d9cec2] text-[#2c2418] hover:border-[#886c44]'}`}
+              style={SANS}>{n}</button>
+          ))}
+          <span className="self-center text-sm font-bold text-[#9e8b6f] ml-1">1 = poor · 5 = excellent</span>
+        </div>
+      )
+
+    case 'date':
+      return <input type="date" value={value || ''} onChange={e => onChange(e.target.value)} className={INPUT} style={SANS} />
+
+    default:
+      return null
+  }
+}
+
+// ─── Form: Results summary ─────────────────────────────────────────────────────
+
+function FormSummary({ form, responses }) {
+  if (!responses.length) return null
+  const total = responses.length
+
+  return (
+    <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] max-w-2xl">
+      <h3 className="text-2xl font-normal text-[#2c2418] mb-1" style={SERIF}>Responses so far</h3>
+      <p className="text-sm text-[#9e8b6f] font-bold mb-8">{total} response{total !== 1 ? 's' : ''} total</p>
+
+      {(form.fields || []).map(q => {
+        const vals = responses
+          .map(r => r.answers?.[q.id])
+          .filter(v => v !== undefined && v !== '' && v !== null && !(Array.isArray(v) && v.length === 0))
+        if (!vals.length) return null
+
+        if (q.type === 'short_text' || q.type === 'long_text') {
+          return (
+            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
+              <p className="text-base font-bold text-[#2c2418] mb-3">{q.label}</p>
+              <div className="space-y-2">
+                {vals.map((v, i) => <p key={i} className="text-base text-[#2c2418] p-3 bg-[#faf8f4] rounded-lg">{v}</p>)}
+              </div>
+            </div>
+          )
+        }
+
+        if (q.type === 'multiple_choice' || q.type === 'yes_no') {
+          const opts = q.type === 'yes_no' ? ['Yes', 'No'] : (q.options || [])
+          const counts = {}
+          opts.forEach(o => { counts[o] = 0 })
+          vals.forEach(v => { if (counts[v] !== undefined) counts[v]++ })
+          return (
+            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
+              <p className="text-base font-bold text-[#2c2418] mb-4">{q.label}</p>
+              <div className="space-y-3">
+                {opts.map((opt, i) => {
+                  const c = counts[opt] || 0
+                  const pct = vals.length > 0 ? Math.round((c / vals.length) * 100) : 0
+                  return (
+                    <div key={i}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-bold text-[#2c2418]">{opt}</span>
+                        <span className="font-bold text-[#886c44]">{c} ({pct}%)</span>
+                      </div>
+                      <div className="h-2 bg-[#f0e6d8] rounded-full">
+                        <div className="h-2 bg-[#886c44] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        }
+
+        if (q.type === 'checkboxes') {
+          const opts = q.options || []
+          const counts = {}; opts.forEach(o => { counts[o] = 0 })
+          vals.forEach(arr => { if (Array.isArray(arr)) arr.forEach(a => { if (counts[a] !== undefined) counts[a]++ }) })
+          return (
+            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
+              <p className="text-base font-bold text-[#2c2418] mb-4">{q.label}</p>
+              <div className="space-y-3">
+                {opts.map((opt, i) => {
+                  const c = counts[opt] || 0
+                  const pct = vals.length > 0 ? Math.round((c / vals.length) * 100) : 0
+                  return (
+                    <div key={i}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-bold text-[#2c2418]">{opt}</span>
+                        <span className="font-bold text-[#886c44]">{c} ({pct}%)</span>
+                      </div>
+                      <div className="h-2 bg-[#f0e6d8] rounded-full">
+                        <div className="h-2 bg-[#886c44] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        }
+
+        if (q.type === 'rating') {
+          const nums = vals.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 5)
+          const avg = nums.length ? (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1) : '—'
+          const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+          nums.forEach(n => { dist[n] = (dist[n] || 0) + 1 })
+          return (
+            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
+              <p className="text-base font-bold text-[#2c2418] mb-2">{q.label}</p>
+              <p className="text-4xl font-bold text-[#886c44] mb-5">{avg}<span className="text-base font-bold text-[#9e8b6f]"> / 5</span></p>
+              <div className="space-y-2">
+                {[5, 4, 3, 2, 1].map(star => {
+                  const c = dist[star] || 0
+                  const pct = nums.length ? Math.round((c / nums.length) * 100) : 0
+                  return (
+                    <div key={star} className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-[#2c2418] w-3">{star}</span>
+                      <div className="flex-1 h-2 bg-[#f0e6d8] rounded-full">
+                        <div className="h-2 bg-[#886c44] rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-sm font-bold text-[#886c44] w-6 text-right">{c}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        }
+
+        if (q.type === 'date') {
+          return (
+            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
+              <p className="text-base font-bold text-[#2c2418] mb-3">{q.label}</p>
+              <div className="space-y-1">
+                {vals.map((v, i) => <p key={i} className="text-base font-bold text-[#886c44]">{v}</p>)}
+              </div>
+            </div>
+          )
+        }
+
+        return null
+      })}
+    </div>
+  )
+}
+
+// ─── Volunteer: Form Page ──────────────────────────────────────────────────────
+
+function FormPage({ id }) {
+  const [form, setForm]             = useState(null)
+  const [answers, setAnswers]       = useState({})
+  const [submitted, setSubmitted]   = useState(false)
+  const [responses, setResponses]   = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [errors, setErrors]         = useState({})
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: f } = await supabase.from('nsh_forms').select('*').eq('id', id).single()
+      if (!f) { setLoading(false); return }
+      setForm(f)
+      const init = {}
+      ;(f.fields || []).forEach(q => { init[q.id] = q.type === 'checkboxes' ? [] : '' })
+      setAnswers(init)
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  const handleSubmit = async () => {
+    const errs = {}
+    ;(form.fields || []).forEach(q => {
+      if (!q.required) return
+      const v = answers[q.id]
+      if (Array.isArray(v) ? v.length === 0 : !String(v ?? '').trim()) errs[q.id] = true
+    })
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    setErrors({})
+    setSubmitting(true)
+    await supabase.from('nsh_form_responses').insert({ form_id: id, answers })
+    const { data: res } = await supabase.from('nsh_form_responses').select('answers').eq('form_id', id)
+    setResponses(res || [])
+    setSubmitting(false)
+    setSubmitted(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  if (loading) return <LoadingScreen />
+  if (!form)   return <NotFound />
+
+  return (
+    <div className="min-h-screen bg-[#f0e6d8]" style={SANS}>
+      <TopBar onBack={() => window.history.back()} />
+      <div className="max-w-3xl mx-auto px-6 py-14">
+
+        <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">Form</p>
+        <h1 className="text-5xl font-normal mb-4 text-[#2c2418] leading-tight" style={SERIF}>{form.title}</h1>
+        {form.description && (
+          <p className="text-lg text-[#2c2418] mb-10 leading-relaxed max-w-2xl">{form.description}</p>
+        )}
+
+        {submitted ? (
+          <>
+            <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-white rounded-xl border-2 border-[#886c44]">
+              <Check size={22} className="text-[#886c44] flex-shrink-0" />
+              <p className="text-lg text-[#2c2418] font-bold">Your response has been recorded. Thank you!</p>
+            </div>
+            <FormSummary form={form} responses={responses} />
+          </>
+        ) : (
+          <div className="space-y-6">
+            {(form.fields || []).map((q, i) => (
+              <div key={q.id} className={`bg-white p-7 rounded-xl border-2 transition ${errors[q.id] ? 'border-red-400' : 'border-[#e8e4dc]'}`}>
+                <p className="text-lg text-[#2c2418] font-bold mb-1">
+                  {i + 1}. {q.label}
+                  {q.required && <span className="text-red-500 ml-1">*</span>}
+                </p>
+                {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
+                <div className="mt-4">
+                  <QuestionInput
+                    question={q}
+                    value={answers[q.id]}
+                    onChange={v => {
+                      setAnswers(a => ({ ...a, [q.id]: v }))
+                      setErrors(e => ({ ...e, [q.id]: false }))
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="px-8 py-4 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+              {submitting ? 'Submitting…' : 'Submit'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Volunteer: Event Page ─────────────────────────────────────────────────────
 
 function EventPage({ id }) {
   const [event, setEvent]     = useState(null)
   const [responses, setResponses] = useState([])
   const [slots, setSlots]     = useState([])
-  const [signups, setSignups] = useState({})   // slotId → [signup]
+  const [signups, setSignups] = useState({})
   const [name, setName]           = useState('')
-  const [submitted, setSubmitted] = useState(false)   // rsvp
-  const [signedSlot, setSignedSlot]   = useState(null)   // shift: slot id just signed up for
-  const [expandedSlot, setExpandedSlot] = useState(null) // shift: slot id showing name input
-  const [slotName, setSlotName]       = useState('')     // shift: name being typed
+  const [submitted, setSubmitted] = useState(false)
+  const [signedSlot, setSignedSlot]   = useState(null)
+  const [expandedSlot, setExpandedSlot] = useState(null)
+  const [slotName, setSlotName]       = useState('')
   const [loading, setLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
@@ -125,7 +440,6 @@ function EventPage({ id }) {
       <TopBar onBack={() => window.history.back()} />
       <div className="max-w-3xl mx-auto px-6 py-14">
 
-        {/* Header */}
         <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">
           {isShift ? 'Volunteer Sign-Up' : 'Event'}
         </p>
@@ -139,7 +453,6 @@ function EventPage({ id }) {
           <p className="text-lg text-[#2c2418] font-normal mb-10 leading-relaxed max-w-2xl">{event.description}</p>
         )}
 
-        {/* ── RSVP mode ── */}
         {!isShift && (
           <>
             {submitted ? (
@@ -177,7 +490,6 @@ function EventPage({ id }) {
           </>
         )}
 
-        {/* ── Shift mode ── */}
         {isShift && (
           <div className="space-y-4">
             {slots.length === 0 && (
@@ -192,8 +504,6 @@ function EventPage({ id }) {
 
               return (
                 <div key={slot.id} className={`bg-white rounded-xl border-2 p-6 transition-all ${isFull && !didSignUp ? 'border-[#d9cec2]' : didSignUp ? 'border-[#886c44]' : 'border-[#e8e4dc]'}`}>
-
-                  {/* Shift info row */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       {slot.time_label && (
@@ -208,33 +518,23 @@ function EventPage({ id }) {
                           </span>
                         )}
                       </div>
-
-                      {/* Who signed up */}
                       {slotSignups.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {slotSignups.map(s => (
-                            <span key={s.id} className="px-3 py-1 bg-[#f0e6d8] text-[#2c2418] text-sm font-bold rounded-full">
-                              {s.name}
-                            </span>
+                            <span key={s.id} className="px-3 py-1 bg-[#f0e6d8] text-[#2c2418] text-sm font-bold rounded-full">{s.name}</span>
                           ))}
                         </div>
                       )}
                     </div>
-
-                    {/* Action */}
                     <div className="flex-shrink-0 pt-1">
                       {didSignUp ? (
                         <div className="flex items-center gap-2 text-[#886c44]">
-                          <Check size={20} />
-                          <span className="text-base font-bold">Signed up!</span>
+                          <Check size={20} /><span className="text-base font-bold">Signed up!</span>
                         </div>
                       ) : isFull ? (
                         <span className="text-base font-bold text-red-400">Full</span>
                       ) : isExpanded ? (
-                        <button onClick={() => { setExpandedSlot(null); setSlotName('') }}
-                          className="text-sm font-bold text-[#9e8b6f] hover:text-[#2c2418] transition">
-                          Cancel
-                        </button>
+                        <button onClick={() => { setExpandedSlot(null); setSlotName('') }} className="text-sm font-bold text-[#9e8b6f] hover:text-[#2c2418] transition">Cancel</button>
                       ) : (
                         <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
                           className="px-5 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition whitespace-nowrap">
@@ -243,28 +543,17 @@ function EventPage({ id }) {
                       )}
                     </div>
                   </div>
-
-                  {/* Inline name input */}
                   {isExpanded && (
                     <div className="mt-5 pt-5 border-t-2 border-[#f0e6d8] flex gap-3">
                       <input
-                        type="text"
-                        value={slotName}
-                        onChange={e => setSlotName(e.target.value)}
+                        type="text" value={slotName} onChange={e => setSlotName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleShiftSignup(slot.id)}
-                        placeholder="Enter your full name"
-                        autoFocus
-                        className={`${INPUT} flex-1`}
-                        style={SANS}
+                        placeholder="Enter your full name" autoFocus
+                        className={`${INPUT} flex-1`} style={SANS}
                       />
-                      <button
-                        onClick={() => handleShiftSignup(slot.id)}
-                        disabled={!slotName.trim()}
+                      <button onClick={() => handleShiftSignup(slot.id)} disabled={!slotName.trim()}
                         className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-40 whitespace-nowrap"
-                        style={SANS}
-                      >
-                        Confirm
-                      </button>
+                        style={SANS}>Confirm</button>
                     </div>
                   )}
                 </div>
@@ -381,29 +670,108 @@ function PollPage({ id }) {
   )
 }
 
+// ─── Admin: Question editor row ────────────────────────────────────────────────
+
+function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove }) {
+  const hasOptions = ['multiple_choice', 'checkboxes'].includes(q.type)
+  return (
+    <div className="bg-[#faf8f4] border-2 border-[#e8e4dc] rounded-xl p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 space-y-3">
+          <div className="flex gap-3 flex-wrap">
+            <select
+              value={q.type}
+              onChange={e => onUpdate({ ...q, type: e.target.value })}
+              className="p-3 border-2 border-[#d9cec2] rounded-lg text-sm font-bold focus:outline-none focus:border-[#886c44] bg-white text-[#2c2418] flex-shrink-0"
+              style={SANS}>
+              {QUESTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <input
+              placeholder={`Question ${index + 1}`}
+              value={q.label}
+              onChange={e => onUpdate({ ...q, label: e.target.value })}
+              className={`${INPUT} flex-1 min-w-[180px]`}
+              style={SANS}
+            />
+          </div>
+
+          {hasOptions && (
+            <div className="space-y-2 ml-1">
+              {(q.options || []).map((opt, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input
+                    placeholder={`Option ${i + 1}`}
+                    value={opt}
+                    onChange={e => { const o = [...q.options]; o[i] = e.target.value; onUpdate({ ...q, options: o }) }}
+                    className={`${INPUT} flex-1`}
+                    style={SANS}
+                  />
+                  {q.options.length > 2 && (
+                    <button onClick={() => onUpdate({ ...q, options: q.options.filter((_, idx) => idx !== i) })}
+                      className="text-[#9e8b6f] hover:text-red-500 transition flex-shrink-0">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={() => onUpdate({ ...q, options: [...(q.options || []), ''] })}
+                className="flex items-center gap-1 text-sm text-[#886c44] font-bold hover:text-[#6d5436] transition">
+                <Plus size={14} /> Add option
+              </button>
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={q.required}
+              onChange={e => onUpdate({ ...q, required: e.target.checked })}
+              className="w-4 h-4 accent-[#886c44]"
+            />
+            <span className="text-sm font-bold text-[#9e8b6f]">Required</span>
+          </label>
+        </div>
+
+        {canRemove && (
+          <button onClick={onRemove} className="text-[#9e8b6f] hover:text-red-500 transition flex-shrink-0 mt-1">
+            <X size={18} />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Admin Dashboard ───────────────────────────────────────────────────────────
 
 function AdminDashboard() {
   const [events, setEvents] = useState([])
   const [polls, setPolls]   = useState([])
+  const [forms, setForms]   = useState([])
   const [copiedId, setCopiedId] = useState(null)
-  const [active, setActive] = useState(null)  // 'event' | 'poll' | null
+  const [active, setActive] = useState(null)
   const [saving, setSaving] = useState(null)
 
   // Event form
-  const [eventType, setEventType] = useState('rsvp')  // 'rsvp' | 'shift'
+  const [eventType, setEventType] = useState('rsvp')
   const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', description: '' })
   const [slots, setSlots] = useState([{ time_label: '', duration: '', role: '', spots: '' }])
 
   // Poll form
   const [pollForm, setPollForm] = useState({ question: '', options: ['', ''] })
 
+  // Form builder
+  const [formMeta, setFormMeta]           = useState({ title: '', description: '' })
+  const [formQuestions, setFormQuestions] = useState([mkQuestion()])
+
   const fetchAll = useCallback(async () => {
-    const [{ data: ev }, { data: po }] = await Promise.all([
+    const [{ data: ev }, { data: po }, { data: fo }] = await Promise.all([
       supabase.from('vol_events').select('*, vol_event_responses(count), vol_shift_slots(count)').order('created_at', { ascending: false }),
       supabase.from('vol_polls').select('*, vol_poll_votes(count)').order('created_at', { ascending: false }),
+      supabase.from('nsh_forms').select('*, nsh_form_responses(count)').order('created_at', { ascending: false }),
     ])
-    setEvents(ev || []); setPolls(po || [])
+    setEvents(ev || []); setPolls(po || []); setForms(fo || [])
   }, [])
 
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -440,6 +808,25 @@ function AdminDashboard() {
     await fetchAll(); setSaving(null)
   }
 
+  const createForm = async () => {
+    if (!formMeta.title.trim()) return
+    setSaving('form')
+    const fields = formQuestions
+      .filter(q => q.label.trim())
+      .map(({ id, type, label, required, options }) => ({
+        id, type, label: label.trim(), required,
+        ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
+      }))
+    await supabase.from('nsh_forms').insert({
+      title: formMeta.title.trim(),
+      description: formMeta.description.trim() || null,
+      fields
+    })
+    setFormMeta({ title: '', description: '' })
+    setFormQuestions([mkQuestion()])
+    await fetchAll(); setSaving(null)
+  }
+
   const deleteEvent = async (id) => {
     await supabase.from('vol_events').delete().eq('id', id)
     setEvents(prev => prev.filter(e => e.id !== id))
@@ -447,6 +834,10 @@ function AdminDashboard() {
   const deletePoll = async (id) => {
     await supabase.from('vol_polls').delete().eq('id', id)
     setPolls(prev => prev.filter(p => p.id !== id))
+  }
+  const deleteForm = async (id) => {
+    await supabase.from('nsh_forms').delete().eq('id', id)
+    setForms(prev => prev.filter(f => f.id !== id))
   }
 
   const copyLink = (type, id) => {
@@ -459,9 +850,14 @@ function AdminDashboard() {
     const s = [...slots]; s[i] = { ...s[i], [field]: val }; setSlots(s)
   }
 
+  const updateQuestion = (i, updated) => {
+    const qs = [...formQuestions]; qs[i] = updated; setFormQuestions(qs)
+  }
+
   const TILES = [
     { key: 'event', label: 'Events', sub: `${events.length} created` },
     { key: 'poll',  label: 'Polls',  sub: `${polls.length} created` },
+    { key: 'form',  label: 'Forms',  sub: `${forms.length} created` },
   ]
 
   const eventMeta = (e) => {
@@ -481,7 +877,7 @@ function AdminDashboard() {
         <p className="text-base text-[#9e8b6f] font-bold mb-10">Select a category to create or manage.</p>
 
         {/* Tiles */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4 mb-8">
           {TILES.map(({ key, label, sub }) => (
             <button key={key} onClick={() => setActive(prev => prev === key ? null : key)}
               className={`p-8 rounded-xl border-2 text-left transition ${active === key ? 'bg-[#886c44] border-[#886c44]' : 'bg-white border-[#e8e4dc] hover:border-[#886c44]'}`}>
@@ -496,8 +892,6 @@ function AdminDashboard() {
           <div>
             <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
               <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New Event</p>
-
-              {/* Type toggle */}
               <div className="flex gap-3 mb-6">
                 <button onClick={() => setEventType('rsvp')}
                   className={`px-5 py-2.5 rounded-lg border-2 text-sm font-bold transition ${eventType === 'rsvp' ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#d9cec2] text-[#2c2418] hover:border-[#886c44]'}`}>
@@ -508,16 +902,12 @@ function AdminDashboard() {
                   Shift Sign-up
                 </button>
               </div>
-
-              {/* Common fields */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <input placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className={`${INPUT} col-span-2`} style={SANS} />
                 <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className={INPUT} style={SANS} />
                 {eventType === 'rsvp' && <input type="time" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />}
               </div>
               <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT} mb-6`} rows={2} style={SANS} />
-
-              {/* Shift-only: slot builder */}
               {eventType === 'shift' && (
                 <div className="mb-6">
                   <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Time Slots</p>
@@ -542,17 +932,14 @@ function AdminDashboard() {
                   </button>
                 </div>
               )}
-
               <button onClick={createEvent} disabled={saving === 'event'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
                 {saving === 'event' ? 'Saving…' : eventType === 'shift' ? 'Create Signup Sheet' : 'Create Event'}
               </button>
             </div>
-
             <div className="space-y-2">
               {events.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No events yet.</p>}
               {events.map(e => (
-                <AdminCard key={e.id} title={e.title} subtitle={e.date || ''}
-                  meta={eventMeta(e)}
+                <AdminCard key={e.id} title={e.title} subtitle={e.date || ''} meta={eventMeta(e)}
                   copied={copiedId === e.id} onCopy={() => copyLink('event', e.id)} onDelete={() => deleteEvent(e.id)} />
               ))}
             </div>
@@ -588,6 +975,73 @@ function AdminDashboard() {
                 <AdminCard key={p.id} title={p.question}
                   meta={`${p.vol_poll_votes?.[0]?.count ?? 0} vote${(p.vol_poll_votes?.[0]?.count ?? 0) !== 1 ? 's' : ''}`}
                   copied={copiedId === p.id} onCopy={() => copyLink('poll', p.id)} onDelete={() => deletePoll(p.id)} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Forms panel ── */}
+        {active === 'form' && (
+          <div>
+            <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
+              <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New Form</p>
+
+              <div className="space-y-4 mb-6">
+                <input
+                  placeholder="Form title"
+                  value={formMeta.title}
+                  onChange={e => setFormMeta({ ...formMeta, title: e.target.value })}
+                  className={INPUT} style={SANS}
+                />
+                <textarea
+                  placeholder="Description (optional)"
+                  value={formMeta.description}
+                  onChange={e => setFormMeta({ ...formMeta, description: e.target.value })}
+                  className={INPUT} rows={2} style={SANS}
+                />
+              </div>
+
+              <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
+              <div className="space-y-3 mb-4">
+                {formQuestions.map((q, i) => (
+                  <QuestionEditor
+                    key={q.id}
+                    question={q}
+                    index={i}
+                    onUpdate={updated => updateQuestion(i, updated)}
+                    onRemove={() => setFormQuestions(formQuestions.filter((_, idx) => idx !== i))}
+                    canRemove={formQuestions.length > 1}
+                  />
+                ))}
+              </div>
+
+              <div className="flex gap-4 mb-6">
+                <button
+                  onClick={() => setFormQuestions([...formQuestions, mkQuestion()])}
+                  className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition">
+                  <Plus size={16} /> Add question
+                </button>
+              </div>
+
+              <button
+                onClick={createForm}
+                disabled={saving === 'form'}
+                className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+                {saving === 'form' ? 'Saving…' : 'Create Form'}
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {forms.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No forms yet.</p>}
+              {forms.map(f => (
+                <AdminCard
+                  key={f.id}
+                  title={f.title}
+                  meta={`${f.fields?.length ?? 0} question${(f.fields?.length ?? 0) !== 1 ? 's' : ''} · ${f.nsh_form_responses?.[0]?.count ?? 0} response${(f.nsh_form_responses?.[0]?.count ?? 0) !== 1 ? 's' : ''}`}
+                  copied={copiedId === f.id}
+                  onCopy={() => copyLink('form', f.id)}
+                  onDelete={() => deleteForm(f.id)}
+                />
               ))}
             </div>
           </div>
@@ -631,5 +1085,6 @@ export default function App() {
 
   if (view === 'event' && id) return <EventPage id={id} />
   if (view === 'poll'  && id) return <PollPage id={id} />
+  if (view === 'form'  && id) return <FormPage id={id} />
   return <AdminDashboard />
 }
