@@ -913,17 +913,42 @@ function EventDetail({ id, onBack }) {
       description: editForm.description.trim() || null,
     }).eq('id', id)
     if (event.event_type === 'shift') {
-      await supabase.from('vol_shift_slots').delete().eq('event_id', id)
       const valid = editSlots.filter(s => s.time_label?.trim())
-      if (valid.length) {
+      const originalIds = slots.map(s => s.id)
+      const keptIds = valid.filter(s => s.id).map(s => s.id)
+
+      // Delete slots that were removed (preserves their signups cascade only for truly removed)
+      const toDelete = originalIds.filter(oid => !keptIds.includes(oid))
+      if (toDelete.length) await supabase.from('vol_shift_slots').delete().in('id', toDelete)
+
+      // Update existing slots in place (preserves signups)
+      for (const [i, s] of valid.filter(s => s.id).entries()) {
+        await supabase.from('vol_shift_slots').update({
+          time_label: s.time_label, duration: s.duration || null, role: null,
+          spots: s.spots ? Number(s.spots) : null, sort_order: valid.indexOf(s)
+        }).eq('id', s.id)
+      }
+
+      // Insert brand-new slots
+      const newSlots = valid.filter(s => !s.id)
+      if (newSlots.length) {
         await supabase.from('vol_shift_slots').insert(
-          valid.map((s, i) => ({ event_id: id, time_label: s.time_label, duration: s.duration || null, role: null, spots: s.spots ? Number(s.spots) : null, sort_order: i }))
+          newSlots.map((s, i) => ({ event_id: id, time_label: s.time_label, duration: s.duration || null, role: null, spots: s.spots ? Number(s.spots) : null, sort_order: valid.indexOf(s) }))
         )
       }
+
       const { data: sl } = await supabase.from('vol_shift_slots').select('*').eq('event_id', id).order('sort_order')
       const slotList = sl || []
       setSlots(slotList)
       setEditSlots(slotList.map(s => ({ ...s })))
+
+      if (slotList.length) {
+        const { data: sg } = await supabase.from('vol_slot_signups').select('*').in('slot_id', slotList.map(s => s.id)).order('created_at')
+        const grouped = {}
+        slotList.forEach(s => { grouped[s.id] = [] })
+        ;(sg || []).forEach(s => { if (grouped[s.slot_id]) grouped[s.slot_id].push(s) })
+        setSignups(grouped)
+      }
     }
     const { data: ev } = await supabase.from('vol_events').select('*').eq('id', id).single()
     setEvent(ev)
