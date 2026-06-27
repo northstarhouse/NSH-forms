@@ -492,22 +492,18 @@ function EventPage({ id }) {
         </h1>
 
         <div className="flex flex-wrap items-center gap-x-7 gap-y-2 mb-6">
-          {dateStr && (
+          {(dateStr || event.time) && (
             <div className="flex items-center gap-2">
               <Calendar size={14} className="text-[#886c44] flex-shrink-0" />
-              <span className="text-sm font-medium text-[#2c2418]">{dateStr}</span>
+              <span className="text-sm font-medium text-[#2c2418]">
+                {dateStr}{dateStr && event.time ? ' · ' : ''}{event.time}
+              </span>
             </div>
           )}
           <div className="flex items-center gap-2">
             <MapPin size={14} className="text-[#886c44] flex-shrink-0" />
             <span className="text-sm font-medium text-[#2c2418]">The North Star House</span>
           </div>
-          {event.time && (
-            <div className="flex items-center gap-2">
-              <Clock size={14} className="text-[#886c44] flex-shrink-0" />
-              <span className="text-sm font-medium text-[#2c2418]">{event.time}</span>
-            </div>
-          )}
         </div>
 
         {event.description && (
