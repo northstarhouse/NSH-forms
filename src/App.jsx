@@ -459,28 +459,31 @@ function EventPage({ id }) {
 
         {/* ── Event header ── */}
         <div className="max-w-xl mb-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#886c44] mb-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#886c44] mb-5">
             {isShift ? 'Volunteer Sign-Up' : 'Event'}
           </p>
-          <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-6">{event.title}</h1>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
+            <div className="flex items-baseline gap-3">
+              <span className="text-sm font-semibold text-gray-400 w-28 flex-shrink-0">Event Name:</span>
+              <span className="text-base font-bold text-gray-900">{event.title}</span>
+            </div>
             {dateStr && (
-              <div className="flex items-baseline gap-4">
-                <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 w-10 flex-shrink-0">Date</span>
+              <div className="flex items-baseline gap-3">
+                <span className="text-sm font-semibold text-gray-400 w-28 flex-shrink-0">Event Date:</span>
                 <span className="text-base font-medium text-gray-800">{dateStr}</span>
               </div>
             )}
             {timeStr && (
-              <div className="flex items-baseline gap-4">
-                <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 w-10 flex-shrink-0">Time</span>
+              <div className="flex items-baseline gap-3">
+                <span className="text-sm font-semibold text-gray-400 w-28 flex-shrink-0">Event Time:</span>
                 <span className="text-base font-medium text-gray-800">{timeStr}</span>
               </div>
             )}
           </div>
 
           {event.description && (
-            <p className="text-base text-gray-500 mt-5 leading-relaxed">{event.description}</p>
+            <p className="text-sm text-gray-500 mt-5 leading-relaxed">{event.description}</p>
           )}
         </div>
 
@@ -555,14 +558,12 @@ function EventPage({ id }) {
                           {slot.time_label}
                         </p>
                       )}
-                      <div className="flex flex-wrap items-center gap-3 mt-1">
-                        {slot.role && (
-                          <span className={`text-sm font-medium ${isFull && !didSignUp ? 'text-gray-400' : 'text-[#886c44]'}`}>{slot.role}</span>
-                        )}
-                        {spotsLeft !== null && !isFull && (
-                          <span className="text-xs font-semibold text-gray-400">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>
-                        )}
-                      </div>
+                      {slot.duration && (
+                        <p className={`text-sm mt-0.5 ${isFull && !didSignUp ? 'text-gray-400' : 'text-gray-500'}`}>{slot.duration}</p>
+                      )}
+                      {spotsLeft !== null && !isFull && (
+                        <p className="text-xs font-semibold text-gray-400 mt-1">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</p>
+                      )}
                       {slotSignups.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {slotSignups.map(s => (
@@ -730,29 +731,27 @@ function SlotCard({ slot, index, total, onChange, onRemove }) {
         )}
       </div>
       <input
-        placeholder="Time (e.g. 9:00 AM – 11:00 AM)"
+        placeholder="Slot name (e.g. 9am – 11am · Kitchen Help)"
         value={slot.time_label || ''}
         onChange={e => onChange('time_label', e.target.value)}
         className={`${INPUT} mb-3`}
         style={SANS}
       />
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          placeholder="Role (e.g. Kitchen Help)"
-          value={slot.role || ''}
-          onChange={e => onChange('role', e.target.value)}
-          className={INPUT}
-          style={SANS}
-        />
-        <input
-          type="number"
-          placeholder="Max spots (optional)"
-          value={slot.spots || ''}
-          onChange={e => onChange('spots', e.target.value)}
-          className={INPUT}
-          style={SANS}
-        />
-      </div>
+      <input
+        placeholder="Description (optional)"
+        value={slot.duration || ''}
+        onChange={e => onChange('duration', e.target.value)}
+        className={`${INPUT} mb-3`}
+        style={SANS}
+      />
+      <input
+        type="number"
+        placeholder="Max spots (optional)"
+        value={slot.spots || ''}
+        onChange={e => onChange('spots', e.target.value)}
+        className={INPUT}
+        style={SANS}
+      />
     </div>
   )
 }
@@ -883,7 +882,7 @@ function EventDetail({ id, onBack }) {
       const valid = editSlots.filter(s => s.time_label?.trim())
       if (valid.length) {
         await supabase.from('vol_shift_slots').insert(
-          valid.map((s, i) => ({ event_id: id, time_label: s.time_label, role: s.role || null, spots: s.spots ? Number(s.spots) : null, sort_order: i }))
+          valid.map((s, i) => ({ event_id: id, time_label: s.time_label, duration: s.duration || null, role: null, spots: s.spots ? Number(s.spots) : null, sort_order: i }))
         )
       }
       const { data: sl } = await supabase.from('vol_shift_slots').select('*').eq('event_id', id).order('sort_order')
@@ -933,7 +932,7 @@ function EventDetail({ id, onBack }) {
                       onRemove={() => setEditSlots(editSlots.filter((_, idx) => idx !== i))} />
                   ))}
                 </div>
-                <button onClick={() => setEditSlots([...editSlots, { time_label: '', role: '', spots: '' }])}
+                <button onClick={() => setEditSlots([...editSlots, { time_label: '', duration: '', spots: '' }])}
                   className="flex items-center gap-2 text-sm text-[#886c44] font-bold hover:text-[#6d5436] transition">
                   <Plus size={14} /> Add time slot
                 </button>
@@ -1002,7 +1001,7 @@ function EventDetail({ id, onBack }) {
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <p className="text-lg font-bold text-[#2c2418]">{slot.time_label}</p>
-                      {slot.role && <p className="text-sm text-[#886c44] font-bold">{slot.role}</p>}
+                      {slot.duration && <p className="text-sm text-[#886c44] font-medium">{slot.duration}</p>}
                     </div>
                     <p className="text-sm font-bold text-[#9e8b6f]">{su.length}{slot.spots ? `/${slot.spots}` : ''} signed up</p>
                   </div>
@@ -1300,7 +1299,7 @@ function AdminDashboard() {
   // Event form
   const [eventType, setEventType] = useState('rsvp')
   const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', description: '' })
-  const [slots, setSlots] = useState([{ time_label: '', duration: '', role: '', spots: '' }])
+  const [slots, setSlots] = useState([{ time_label: '', duration: '', spots: '' }])
 
   // Poll form
   const [pollForm, setPollForm] = useState({ question: '', options: ['', ''] })
@@ -1331,8 +1330,8 @@ function AdminDashboard() {
           validSlots.map((s, i) => ({
             event_id: ev.id,
             time_label: s.time_label,
-            duration: s.duration,
-            role: s.role,
+            duration: s.duration || null,
+            role: null,
             spots: s.spots ? Number(s.spots) : null,
             sort_order: i
           }))
@@ -1340,7 +1339,7 @@ function AdminDashboard() {
       }
     }
     setEventForm({ title: '', date: '', time: '', description: '' })
-    setSlots([{ time_label: '', duration: '', role: '', spots: '' }])
+    setSlots([{ time_label: '', duration: '', spots: '' }])
     await fetchAll(); setSaving(null)
   }
 
@@ -1470,7 +1469,7 @@ function AdminDashboard() {
                       />
                     ))}
                   </div>
-                  <button onClick={() => setSlots([...slots, { time_label: '', role: '', spots: '' }])}
+                  <button onClick={() => setSlots([...slots, { time_label: '', duration: '', spots: '' }])}
                     className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition">
                     <Plus size={16} /> Add time slot
                   </button>
