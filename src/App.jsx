@@ -603,7 +603,7 @@ function EventPage({ id }) {
                 return (
                   <div key={slot.id} className={isFull && !didSignUp ? 'opacity-50' : ''}>
                     <div className="flex items-start justify-between gap-6">
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 max-w-[65%]">
                         <p className="text-lg font-bold text-[#1e1a14] mb-1" style={DISPLAY}>
                           {slot.time_label}
                         </p>
