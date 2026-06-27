@@ -567,7 +567,7 @@ function EventPage({ id }) {
 
         {/* Shift slots */}
         {isShift && (
-          <div className="max-w-2xl bg-white rounded-2xl px-8 py-8">
+          <div className="bg-white rounded-2xl px-8 py-8">
             {slots.length === 0 && (
               <p className="text-sm text-[#a08060]">No time slots added yet.</p>
             )}
