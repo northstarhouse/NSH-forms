@@ -452,160 +452,179 @@ function EventPage({ id }) {
   const timeStr = fmtTime(event.time)
 
   return (
-    <div className="min-h-screen bg-white" style={FONT}>
-      <TopBar onBack={() => window.history.back()} />
+    <div className="min-h-screen bg-[#f8f5f0]" style={FONT}>
 
-      <div className="px-6 sm:px-10 lg:px-20 xl:px-32 py-12">
+      {/* ── Branded hero ── */}
+      <div className="bg-[#2c2418] px-6 sm:px-12 lg:px-20 xl:px-28 pt-10 pb-14">
+        <button onClick={() => window.history.back()}
+          className="flex items-center gap-2 text-[#a08060] hover:text-[#c4a882] text-sm font-medium mb-10 transition">
+          <ArrowLeft size={14} /> Back
+        </button>
 
-        {/* ── Event header ── */}
-        <div className="max-w-xl mb-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#886c44] mb-5">
-            {isShift ? 'Volunteer Sign-Up' : 'Event'}
-          </p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#c4a882] mb-5">
+          {isShift ? 'Volunteer Sign-Up' : 'Event'} · North Star House
+        </p>
 
-          <div className="space-y-3">
-            <div className="flex items-baseline gap-3">
-              <span className="text-sm font-semibold text-gray-400 w-28 flex-shrink-0">Event Name:</span>
-              <span className="text-base font-bold text-gray-900">{event.title}</span>
+        <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-8 max-w-2xl">
+          {event.title}
+        </h1>
+
+        <div className="flex flex-wrap gap-x-10 gap-y-4">
+          {dateStr && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-1">Event Date</p>
+              <p className="text-base font-medium text-white">{dateStr}</p>
             </div>
-            {dateStr && (
-              <div className="flex items-baseline gap-3">
-                <span className="text-sm font-semibold text-gray-400 w-28 flex-shrink-0">Event Date:</span>
-                <span className="text-base font-medium text-gray-800">{dateStr}</span>
-              </div>
-            )}
-            {timeStr && (
-              <div className="flex items-baseline gap-3">
-                <span className="text-sm font-semibold text-gray-400 w-28 flex-shrink-0">Event Time:</span>
-                <span className="text-base font-medium text-gray-800">{timeStr}</span>
-              </div>
-            )}
-          </div>
-
-          {event.description && (
-            <p className="text-sm text-gray-500 mt-5 leading-relaxed">{event.description}</p>
+          )}
+          {timeStr && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-1">Event Time</p>
+              <p className="text-base font-medium text-white">{timeStr}</p>
+            </div>
           )}
         </div>
+      </div>
 
-        <div className="border-t border-gray-100 mb-8 max-w-xl" />
+      {/* ── Body ── */}
+      <div className="px-6 sm:px-12 lg:px-20 xl:px-28 py-10">
 
-        {/* ── RSVP ── */}
+        {event.description && (
+          <p className="text-sm text-gray-500 mb-8 max-w-xl leading-relaxed">{event.description}</p>
+        )}
+
+        {/* RSVP */}
         {!isShift && (
-          <>
+          <div className="max-w-sm">
             {submitted ? (
-              <div className="flex items-center gap-3 py-4 px-5 mb-8 bg-green-50 border border-green-200 rounded-xl max-w-xl">
-                <Check size={20} className="text-green-600 flex-shrink-0" />
-                <p className="text-base font-semibold text-green-800">Thanks, {name}! Your response was recorded.</p>
+              <div className="flex items-center gap-3 py-4 px-5 bg-white border border-gray-200 rounded-xl shadow-sm">
+                <Check size={18} className="text-[#886c44] flex-shrink-0" />
+                <p className="text-sm font-semibold text-gray-800">Thanks, {name}! Your RSVP was recorded.</p>
               </div>
             ) : (
-              <div className="mb-10 max-w-sm space-y-4">
-                <label className="block text-sm font-semibold text-gray-700">Your name</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)}
-                  placeholder="Full name" autoFocus
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:border-[#886c44] focus:ring-1 focus:ring-[#886c44]" />
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Your Name</label>
+                  <input type="text" value={name} onChange={e => setName(e.target.value)}
+                    placeholder="Full name" autoFocus
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:border-[#886c44]" />
+                </div>
                 <div className="flex gap-2 pt-1">
                   <button onClick={() => handleRSVP('yes')} disabled={!name.trim()}
                     className="flex-1 py-3 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">Yes</button>
                   <button onClick={() => handleRSVP('plus1')} disabled={!name.trim()}
-                    className="flex-1 py-3 bg-white text-[#886c44] border border-[#886c44] rounded-lg text-sm font-semibold hover:bg-[#fdf8f3] transition disabled:opacity-40">Yes +1</button>
+                    className="flex-1 py-3 border border-[#886c44] text-[#886c44] rounded-lg text-sm font-semibold hover:bg-[#fdf8f3] transition disabled:opacity-40 bg-white">Yes +1</button>
                   <button onClick={() => handleRSVP('no')} disabled={!name.trim()}
-                    className="flex-1 py-3 bg-white text-gray-500 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-40">No</button>
+                    className="flex-1 py-3 border border-gray-200 text-gray-400 rounded-lg text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-40 bg-white">No</button>
                 </div>
               </div>
             )}
+
             {responses.length > 0 && (
-              <div className="border border-gray-100 rounded-xl p-6 max-w-sm">
-                <div className="flex gap-8 mb-5 pb-5 border-b border-gray-100">
-                  {[['yes', 'Yes', counts.yes], ['plus1', 'Yes +1', counts.plus1], ['no', 'No', counts.no]].map(([k, l, c]) => (
-                    <div key={k} className="text-center">
-                      <p className="text-2xl font-bold text-[#886c44]">{c}</p>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-0.5">{l}</p>
+              <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <div className="flex gap-6 mb-4 pb-4 border-b border-gray-100">
+                  {[['yes', 'Yes', counts.yes], ['plus1', '+1', counts.plus1], ['no', 'No', counts.no]].map(([k, l, c]) => (
+                    <div key={k}>
+                      <p className="text-xl font-bold text-[#2c2418]">{c}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{l}</p>
                     </div>
                   ))}
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {responses.map(r => (
-                    <p key={r.id} className="text-sm text-gray-700">
-                      {r.name} <span className="text-[#886c44] font-semibold">·{r.response === 'plus1' ? ' Yes +1' : r.response === 'yes' ? ' Yes' : ' No'}</span>
+                    <p key={r.id} className="text-sm text-gray-600">
+                      {r.name} <span className="text-[#886c44] font-semibold">{r.response === 'plus1' ? '· +1' : r.response === 'yes' ? '· Yes' : '· No'}</span>
                     </p>
                   ))}
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
-        {/* ── Shift slots ── */}
+        {/* Shift slots */}
         {isShift && (
-          <div className="space-y-3 max-w-xl">
+          <div className="max-w-xl">
             {slots.length === 0 && (
-              <p className="text-sm text-gray-400 font-medium">No time slots have been added yet.</p>
+              <p className="text-sm text-gray-400">No time slots added yet.</p>
             )}
-            {slots.map(slot => {
-              const slotSignups = signups[slot.id] || []
-              const spotsLeft   = slot.spots != null ? slot.spots - slotSignups.length : null
-              const isFull      = spotsLeft !== null && spotsLeft <= 0
-              const didSignUp   = signedSlot === slot.id
-              const isExpanded  = expandedSlot === slot.id
 
-              return (
-                <div key={slot.id}
-                  className={`rounded-xl border p-5 transition-all ${isFull && !didSignUp ? 'bg-gray-50 border-gray-150' : didSignUp ? 'bg-[#fdf8f3] border-[#886c44]' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      {slot.time_label && (
-                        <p className={`text-lg font-semibold leading-tight ${isFull && !didSignUp ? 'text-gray-400' : 'text-gray-900'}`}>
-                          {slot.time_label}
-                        </p>
-                      )}
-                      {slot.duration && (
-                        <p className={`text-sm mt-0.5 ${isFull && !didSignUp ? 'text-gray-400' : 'text-gray-500'}`}>{slot.duration}</p>
-                      )}
-                      {spotsLeft !== null && !isFull && (
-                        <p className="text-xs font-semibold text-gray-400 mt-1">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</p>
-                      )}
-                      {slotSignups.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {slotSignups.map(s => (
-                            <span key={s.id} className="px-2.5 py-0.5 bg-[#f0e6d8] text-[#6d5436] text-xs font-semibold rounded-full">{s.name}</span>
-                          ))}
+            {slots.length > 0 && (
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Available Shifts</p>
+            )}
+
+            <div className="space-y-3">
+              {slots.map(slot => {
+                const slotSignups = signups[slot.id] || []
+                const spotsLeft   = slot.spots != null ? slot.spots - slotSignups.length : null
+                const isFull      = spotsLeft !== null && spotsLeft <= 0
+                const didSignUp   = signedSlot === slot.id
+                const isExpanded  = expandedSlot === slot.id
+
+                return (
+                  <div key={slot.id}
+                    className={`bg-white rounded-xl shadow-sm overflow-hidden border-l-4 transition-all
+                      ${isFull && !didSignUp ? 'border-l-gray-200 opacity-60' : didSignUp ? 'border-l-[#886c44] ring-1 ring-[#886c44] ring-opacity-20' : 'border-l-[#886c44]'}`}>
+                    <div className="px-5 py-4 border border-l-0 border-gray-100 rounded-r-xl">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-base font-semibold ${isFull && !didSignUp ? 'text-gray-400' : 'text-gray-900'}`}>
+                            {slot.time_label}
+                          </p>
+                          {slot.duration && (
+                            <p className={`text-sm mt-1 leading-relaxed ${isFull && !didSignUp ? 'text-gray-300' : 'text-gray-500'}`}>
+                              {slot.duration}
+                            </p>
+                          )}
+                          {spotsLeft !== null && !isFull && (
+                            <p className="text-xs font-semibold text-[#886c44] mt-1.5">
+                              {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} remaining
+                            </p>
+                          )}
+                          {slotSignups.length > 0 && !isFull && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {slotSignups.map(s => (
+                                <span key={s.id} className="text-xs text-gray-400 font-medium after:content-[','] last:after:content-['']">{s.name}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-shrink-0">
-                      {didSignUp ? (
-                        <div className="flex items-center gap-1.5 text-[#886c44]">
-                          <Check size={16} /><span className="text-sm font-semibold">Signed up</span>
+
+                        <div className="flex-shrink-0 pt-0.5">
+                          {didSignUp ? (
+                            <div className="flex items-center gap-1.5 text-[#886c44]">
+                              <Check size={15} /><span className="text-sm font-semibold">Signed up</span>
+                            </div>
+                          ) : isFull ? (
+                            <span className="text-xs font-bold uppercase tracking-widest text-gray-300">Filled</span>
+                          ) : isExpanded ? (
+                            <button onClick={() => { setExpandedSlot(null); setSlotName('') }}
+                              className="text-sm font-medium text-gray-400 hover:text-gray-600 transition">Cancel</button>
+                          ) : (
+                            <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
+                              className="px-4 py-2 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition">
+                              Sign Up
+                            </button>
+                          )}
                         </div>
-                      ) : isFull ? (
-                        <span className="text-xs font-bold uppercase tracking-widest text-gray-400 bg-gray-100 px-3 py-1.5 rounded-md">Filled</span>
-                      ) : isExpanded ? (
-                        <button onClick={() => { setExpandedSlot(null); setSlotName('') }}
-                          className="text-sm font-semibold text-gray-400 hover:text-gray-700 transition">Cancel</button>
-                      ) : (
-                        <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
-                          className="px-4 py-2 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition whitespace-nowrap">
-                          Sign Up
-                        </button>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
+                          <input type="text" value={slotName} onChange={e => setSlotName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleShiftSignup(slot.id)}
+                            placeholder="Your full name" autoFocus
+                            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#886c44]" />
+                          <button onClick={() => handleShiftSignup(slot.id)} disabled={!slotName.trim()}
+                            className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
+                            Confirm
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
-
-                  {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
-                      <input type="text" value={slotName} onChange={e => setSlotName(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleShiftSignup(slot.id)}
-                        placeholder="Your full name" autoFocus
-                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-base focus:outline-none focus:border-[#886c44] focus:ring-1 focus:ring-[#886c44]" />
-                      <button onClick={() => handleShiftSignup(slot.id)} disabled={!slotName.trim()}
-                        className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40 whitespace-nowrap">
-                        Confirm
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
