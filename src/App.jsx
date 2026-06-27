@@ -874,7 +874,6 @@ function AdminDashboard() {
       <TopBar />
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
         <h2 className="text-5xl font-normal mb-2 text-[#2c2418]" style={SERIF}>Volunteer Hub</h2>
-        <p className="text-base text-[#9e8b6f] font-bold mb-10">Select a category to create or manage.</p>
 
         {/* Tiles */}
         <div className="grid grid-cols-3 gap-4 mb-8">
@@ -1050,7 +1049,7 @@ function AdminDashboard() {
 
       <footer className="bg-white border-t-2 border-[#e8e4dc]">
         <div className="max-w-5xl mx-auto px-6 py-6 text-center">
-          <p className="text-sm text-[#9e8b6f] font-bold">North Star House • Grass Valley, CA • (530) 273-4667</p>
+          <p className="text-sm text-[#9e8b6f] font-bold">North Star House • Grass Valley, CA</p>
         </div>
       </footer>
     </div>
