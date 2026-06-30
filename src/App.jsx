@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Copy, ArrowLeft, Check, Plus, X, Calendar, MapPin, Clock } from 'lucide-react'
+import { Copy, ArrowLeft, ArrowUp, ArrowDown, Check, Plus, X, Calendar, MapPin, Clock } from 'lucide-react'
 import { supabase } from './supabase'
 
 const FONT    = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
@@ -784,7 +784,7 @@ function SlotCard({ slot, index, total, onChange, onRemove }) {
 
 // ─── Admin: Question editor row ────────────────────────────────────────────────
 
-function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove }) {
+function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove, onDuplicate, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) {
   const hasOptions = ['multiple_choice', 'checkboxes'].includes(q.type)
   return (
     <div className="bg-[#faf8f4] border-2 border-[#e8e4dc] rounded-xl p-5">
@@ -845,11 +845,26 @@ function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove }) {
           </label>
         </div>
 
-        {canRemove && (
-          <button onClick={onRemove} className="text-[#9e8b6f] hover:text-red-500 transition flex-shrink-0 mt-1">
-            <X size={18} />
+        <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
+          <button onClick={onMoveUp} disabled={!canMoveUp} title="Move up"
+            className="p-1 text-[#9e8b6f] hover:text-[#2c2418] transition disabled:opacity-25">
+            <ArrowUp size={15} />
           </button>
-        )}
+          <button onClick={onMoveDown} disabled={!canMoveDown} title="Move down"
+            className="p-1 text-[#9e8b6f] hover:text-[#2c2418] transition disabled:opacity-25">
+            <ArrowDown size={15} />
+          </button>
+          <button onClick={onDuplicate} title="Duplicate"
+            className="p-1 text-[#9e8b6f] hover:text-[#886c44] transition">
+            <Copy size={15} />
+          </button>
+          {canRemove && (
+            <button onClick={onRemove} title="Remove"
+              className="p-1 text-[#9e8b6f] hover:text-red-500 transition">
+              <X size={15} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -1327,7 +1342,11 @@ function FormDetail({ id, onBack }) {
                 <QuestionEditor key={q.id} question={q} index={i}
                   onUpdate={updated => { const qs = [...editFields]; qs[i] = updated; setEditFields(qs) }}
                   onRemove={() => setEditFields(editFields.filter((_, idx) => idx !== i))}
-                  canRemove={editFields.length > 1} />
+                  canRemove={editFields.length > 1}
+                  onDuplicate={() => { const qs = [...editFields]; qs.splice(i + 1, 0, { ...qs[i], id: genId() }); setEditFields(qs) }}
+                  onMoveUp={() => { const qs = [...editFields]; [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]]; setEditFields(qs) }}
+                  onMoveDown={() => { const qs = [...editFields]; [qs[i], qs[i + 1]] = [qs[i + 1], qs[i]]; setEditFields(qs) }}
+                  canMoveUp={i > 0} canMoveDown={i < editFields.length - 1} />
               ))}
             </div>
             <button onClick={() => setEditFields([...editFields, mkQuestion()])}
@@ -1603,7 +1622,11 @@ function AdminDashboard() {
                 <QuestionEditor key={q.id} question={q} index={i}
                   onUpdate={updated => updateQuestion(i, updated)}
                   onRemove={() => setFormQuestions(formQuestions.filter((_, idx) => idx !== i))}
-                  canRemove={formQuestions.length > 1} />
+                  canRemove={formQuestions.length > 1}
+                  onDuplicate={() => { const qs = [...formQuestions]; qs.splice(i + 1, 0, { ...qs[i], id: genId() }); setFormQuestions(qs) }}
+                  onMoveUp={() => { const qs = [...formQuestions]; [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]]; setFormQuestions(qs) }}
+                  onMoveDown={() => { const qs = [...formQuestions]; [qs[i], qs[i + 1]] = [qs[i + 1], qs[i]]; setFormQuestions(qs) }}
+                  canMoveUp={i > 0} canMoveDown={i < formQuestions.length - 1} />
               ))}
             </div>
             <button onClick={() => setFormQuestions([...formQuestions, mkQuestion()])} className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition mb-6">
