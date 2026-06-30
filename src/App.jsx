@@ -3,9 +3,9 @@ import { Copy, ArrowLeft, Check, Plus, X, Calendar, MapPin, Clock } from 'lucide
 import { supabase } from './supabase'
 
 const FONT    = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
-const SERIF   = FONT
-const SANS    = FONT
 const DISPLAY = { fontFamily: "'Cardo', Georgia, serif" }
+const SERIF   = DISPLAY
+const SANS    = FONT
 const INPUT = "w-full p-3 border-2 border-[#d9cec2] rounded-lg text-base font-normal focus:outline-none focus:border-[#886c44] bg-white"
 
 const QUESTION_TYPES = [
@@ -1399,11 +1399,10 @@ function AdminDashboard() {
   const [forms, setForms]   = useState([])
   const [copiedId, setCopiedId] = useState(null)
   const [active, setActive] = useState(null)
-  const [saving,     setSaving]     = useState(null)
+  const [saving, setSaving] = useState(null)
   const [detailView, setDetailView] = useState(null)
 
-  // Event form
-  const [eventType, setEventType] = useState('rsvp')
+  // Shared event fields
   const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', description: '' })
   const [rsvpOptions, setRsvpOptions] = useState(['', ''])
   const [slots, setSlots] = useState([{ time_label: '', duration: '', spots: '' }])
@@ -1426,22 +1425,18 @@ function AdminDashboard() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  const createEvent = async () => {
+  const createEvent = async (type) => {
     if (!eventForm.title.trim()) return
     setSaving('event')
-    const options = eventType === 'rsvp' ? rsvpOptions.filter(o => o.trim()) : []
-    const { data: ev } = await supabase.from('vol_events').insert({ ...eventForm, event_type: eventType, options }).select().single()
-    if (ev && eventType === 'shift') {
+    const options = type === 'rsvp' ? rsvpOptions.filter(o => o.trim()) : []
+    const { data: ev } = await supabase.from('vol_events').insert({ ...eventForm, event_type: type, options }).select().single()
+    if (ev && type === 'shift') {
       const validSlots = slots.filter(s => s.time_label.trim())
       if (validSlots.length > 0) {
         await supabase.from('vol_shift_slots').insert(
           validSlots.map((s, i) => ({
-            event_id: ev.id,
-            time_label: s.time_label,
-            duration: s.duration || null,
-            role: null,
-            spots: s.spots ? Number(s.spots) : null,
-            sort_order: i
+            event_id: ev.id, time_label: s.time_label, duration: s.duration || null,
+            role: null, spots: s.spots ? Number(s.spots) : null, sort_order: i
           }))
         )
       }
@@ -1469,28 +1464,15 @@ function AdminDashboard() {
         id, type, label: label.trim(), required,
         ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
       }))
-    await supabase.from('nsh_forms').insert({
-      title: formMeta.title.trim(),
-      description: formMeta.description.trim() || null,
-      fields
-    })
+    await supabase.from('nsh_forms').insert({ title: formMeta.title.trim(), description: formMeta.description.trim() || null, fields })
     setFormMeta({ title: '', description: '' })
     setFormQuestions([mkQuestion()])
     await fetchAll(); setSaving(null)
   }
 
-  const deleteEvent = async (id) => {
-    await supabase.from('vol_events').delete().eq('id', id)
-    setEvents(prev => prev.filter(e => e.id !== id))
-  }
-  const deletePoll = async (id) => {
-    await supabase.from('vol_polls').delete().eq('id', id)
-    setPolls(prev => prev.filter(p => p.id !== id))
-  }
-  const deleteForm = async (id) => {
-    await supabase.from('nsh_forms').delete().eq('id', id)
-    setForms(prev => prev.filter(f => f.id !== id))
-  }
+  const deleteEvent = async (id) => { await supabase.from('vol_events').delete().eq('id', id); setEvents(prev => prev.filter(e => e.id !== id)) }
+  const deletePoll  = async (id) => { await supabase.from('vol_polls').delete().eq('id', id);  setPolls(prev => prev.filter(p => p.id !== id)) }
+  const deleteForm  = async (id) => { await supabase.from('nsh_forms').delete().eq('id', id);  setForms(prev => prev.filter(f => f.id !== id)) }
 
   const copyLink = (type, id, title) => {
     const idParam = (type === 'event' && title) ? `${slugify(title)}__${id}` : id
@@ -1499,230 +1481,211 @@ function AdminDashboard() {
     setCopiedId(id); setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const updateSlot = (i, field, val) => {
-    const s = [...slots]; s[i] = { ...s[i], [field]: val }; setSlots(s)
-  }
+  const updateSlot     = (i, field, val) => { const s = [...slots];         s[i] = { ...s[i], [field]: val }; setSlots(s) }
+  const updateQuestion = (i, updated)     => { const qs = [...formQuestions]; qs[i] = updated; setFormQuestions(qs) }
 
-  const updateQuestion = (i, updated) => {
-    const qs = [...formQuestions]; qs[i] = updated; setFormQuestions(qs)
-  }
-
-  const TILES = [
-    { key: 'event', label: 'Events', sub: `${events.length} created` },
-    { key: 'poll',  label: 'Polls',  sub: `${polls.length} created` },
-    { key: 'form',  label: 'Forms',  sub: `${forms.length} created` },
-  ]
-
-  const eventMeta = (e) => {
-    if (e.event_type === 'shift') {
-      const n = e.vol_shift_slots?.[0]?.count ?? 0
-      return `Shift sign-up · ${n} time slot${n !== 1 ? 's' : ''}`
-    }
-    const n = e.vol_event_responses?.[0]?.count ?? 0
-    return `RSVP · ${n} response${n !== 1 ? 's' : ''}`
-  }
+  const rsvpEvents  = events.filter(e => e.event_type === 'rsvp')
+  const shiftEvents = events.filter(e => e.event_type === 'shift')
 
   if (detailView?.type === 'event') return <EventDetail id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
   if (detailView?.type === 'poll')  return <PollDetail  id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
   if (detailView?.type === 'form')  return <FormDetail  id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
 
+  const tile = (key, label, sub) => (
+    <button key={key} onClick={() => setActive(prev => prev === key ? null : key)}
+      className={`py-3.5 px-4 rounded-xl border-2 text-left transition w-full ${active === key ? 'bg-[#886c44] border-[#886c44]' : 'bg-white border-[#e8e4dc] hover:border-[#886c44]'}`}>
+      <p className={`text-sm font-bold leading-snug ${active === key ? 'text-white' : 'text-[#2c2418]'}`} style={SERIF}>{label}</p>
+      {sub && <p className={`text-xs font-semibold mt-0.5 ${active === key ? 'text-[#f0e6d8]' : 'text-[#886c44]'}`}>{sub}</p>}
+    </button>
+  )
+
   return (
     <div className="min-h-screen bg-[#f5f0e7] flex flex-col" style={SANS}>
       <TopBar />
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
-        <h2 className="text-5xl font-normal mb-2 text-[#2c2418]" style={SERIF}>Volunteer Hub</h2>
+        <h2 className="text-5xl font-normal mb-10 text-[#2c2418]" style={SERIF}>Volunteer Hub</h2>
 
-        {/* Tiles */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {TILES.map(({ key, label, sub }) => (
-            <button key={key} onClick={() => setActive(prev => prev === key ? null : key)}
-              className={`p-8 rounded-xl border-2 text-left transition ${active === key ? 'bg-[#886c44] border-[#886c44]' : 'bg-white border-[#e8e4dc] hover:border-[#886c44]'}`}>
-              <p className="text-2xl font-normal mb-1" style={{ ...SERIF, color: active === key ? 'white' : '#2c2418' }}>{label}</p>
-              <p className={`text-sm font-bold ${active === key ? 'text-[#f0e6d8]' : 'text-[#886c44]'}`}>{sub}</p>
-            </button>
-          ))}
+        {/* ── Create ── */}
+        <p className="text-xs font-bold uppercase tracking-widest text-[#9e8b6f] mb-3">Create</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+          {tile('rsvp-create',  'RSVP Event')}
+          {tile('shift-create', 'Volunteer Shift Sign-up')}
+          {tile('form-create',  'Form')}
+          {tile('poll-create',  'Poll')}
         </div>
 
-        {/* ── Events panel ── */}
-        {active === 'event' && (
-          <div>
-            <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
-              <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New Event</p>
-              <div className="flex gap-3 mb-6">
-                <button onClick={() => setEventType('rsvp')}
-                  className={`px-5 py-2.5 rounded-lg border-2 text-sm font-bold transition ${eventType === 'rsvp' ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#d9cec2] text-[#2c2418] hover:border-[#886c44]'}`}>
-                  RSVP Event
-                </button>
-                <button onClick={() => setEventType('shift')}
-                  className={`px-5 py-2.5 rounded-lg border-2 text-sm font-bold transition ${eventType === 'shift' ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#d9cec2] text-[#2c2418] hover:border-[#886c44]'}`}>
-                  Shift Sign-up
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <input placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className={`${INPUT} col-span-2`} style={SANS} />
-                <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className={INPUT} style={SANS} />
-                <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />
-              </div>
-              <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT} mb-6`} rows={2} style={SANS} />
-              {eventType === 'rsvp' && (
-                <div className="mb-6">
-                  <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">RSVP Options</p>
-                  <div className="space-y-2 mb-2">
-                    {rsvpOptions.map((opt, i) => (
-                      <div key={i} className="flex gap-2">
-                        <input value={opt} onChange={e => { const o = [...rsvpOptions]; o[i] = e.target.value; setRsvpOptions(o) }}
-                          placeholder={`Option ${i + 1}`} className={INPUT} style={SANS} />
-                        {rsvpOptions.length > 2 && (
-                          <button onClick={() => setRsvpOptions(rsvpOptions.filter((_, j) => j !== i))}
-                            className="p-2 text-[#9e8b6f] hover:text-red-500 transition"><X size={16} /></button>
-                        )}
-                      </div>
-                    ))}
+        {/* ── View & Manage ── */}
+        <p className="text-xs font-bold uppercase tracking-widest text-[#9e8b6f] mb-3">View & Manage</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+          {tile('rsvp-view',  'RSVP Events',              `${rsvpEvents.length} created`)}
+          {tile('shift-view', 'Volunteer Shift Sign-ups', `${shiftEvents.length} created`)}
+          {tile('form-view',  'Forms',                    `${forms.length} created`)}
+          {tile('poll-view',  'Polls',                    `${polls.length} created`)}
+        </div>
+
+        {/* ── Create RSVP Event ── */}
+        {active === 'rsvp-create' && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New RSVP Event</p>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <input placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className={`${INPUT} col-span-2`} style={SANS} />
+              <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className={INPUT} style={SANS} />
+              <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />
+            </div>
+            <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT} mb-6`} rows={2} style={SANS} />
+            <div className="mb-6">
+              <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">RSVP Options</p>
+              <div className="space-y-2 mb-2">
+                {rsvpOptions.map((opt, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input value={opt} onChange={e => { const o = [...rsvpOptions]; o[i] = e.target.value; setRsvpOptions(o) }} placeholder={`Option ${i + 1}`} className={INPUT} style={SANS} />
+                    {rsvpOptions.length > 2 && (
+                      <button onClick={() => setRsvpOptions(rsvpOptions.filter((_, j) => j !== i))} className="p-2 text-[#9e8b6f] hover:text-red-500 transition"><X size={16} /></button>
+                    )}
                   </div>
-                  <button onClick={() => setRsvpOptions([...rsvpOptions, ''])}
-                    className="flex items-center gap-2 text-sm font-bold text-[#886c44] hover:text-[#6d5436] transition">
-                    <Plus size={14} /> Add Option
-                  </button>
-                </div>
-              )}
-              {eventType === 'shift' && (
-                <div className="mb-6">
-                  <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Time Slots</p>
-                  <div className="space-y-3 mb-3">
-                    {slots.map((slot, i) => (
-                      <SlotCard
-                        key={i}
-                        slot={slot}
-                        index={i}
-                        total={slots.length}
-                        onChange={(field, val) => updateSlot(i, field, val)}
-                        onRemove={() => setSlots(slots.filter((_, idx) => idx !== i))}
-                      />
-                    ))}
-                  </div>
-                  <button onClick={() => setSlots([...slots, { time_label: '', duration: '', spots: '' }])}
-                    className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition">
-                    <Plus size={16} /> Add time slot
-                  </button>
-                </div>
-              )}
-              <button onClick={createEvent} disabled={saving === 'event'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
-                {saving === 'event' ? 'Saving…' : eventType === 'shift' ? 'Create Signup Sheet' : 'Create Event'}
+                ))}
+              </div>
+              <button onClick={() => setRsvpOptions([...rsvpOptions, ''])} className="flex items-center gap-2 text-sm font-bold text-[#886c44] hover:text-[#6d5436] transition">
+                <Plus size={14} /> Add Option
               </button>
             </div>
-            <div className="space-y-2">
-              {events.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No events yet.</p>}
-              {events.map(e => (
-                <AdminCard key={e.id} title={e.title} subtitle={e.date || ''} meta={eventMeta(e)}
-                  copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title)} onDelete={() => deleteEvent(e.id)}
-                  onClick={() => setDetailView({ type: 'event', id: e.id })} />
-              ))}
-            </div>
+            <button onClick={() => createEvent('rsvp')} disabled={saving === 'event'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+              {saving === 'event' ? 'Saving…' : 'Create RSVP Event'}
+            </button>
           </div>
         )}
 
-        {/* ── Polls panel ── */}
-        {active === 'poll' && (
-          <div>
-            <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
-              <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New Poll</p>
-              <input placeholder="Poll question" value={pollForm.question} onChange={e => setPollForm({ ...pollForm, question: e.target.value })} className={`${INPUT} mb-4`} style={SANS} />
+        {/* ── Create Shift Sign-up ── */}
+        {active === 'shift-create' && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New Volunteer Shift Sign-up</p>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <input placeholder="Event title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} className={`${INPUT} col-span-2`} style={SANS} />
+              <input type="date" value={eventForm.date} onChange={e => setEventForm({ ...eventForm, date: e.target.value })} className={INPUT} style={SANS} />
+              <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={eventForm.time} onChange={e => setEventForm({ ...eventForm, time: e.target.value })} className={INPUT} style={SANS} />
+            </div>
+            <textarea placeholder="Description (optional)" value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className={`${INPUT} mb-6`} rows={2} style={SANS} />
+            <div className="mb-6">
+              <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Time Slots</p>
               <div className="space-y-3 mb-3">
-                {pollForm.options.map((opt, i) => (
-                  <input key={i} placeholder={`Option ${i + 1}`} value={opt}
-                    onChange={e => { const o = [...pollForm.options]; o[i] = e.target.value; setPollForm({ ...pollForm, options: o }) }}
-                    className={INPUT} style={SANS} />
+                {slots.map((slot, i) => (
+                  <SlotCard key={i} slot={slot} index={i} total={slots.length}
+                    onChange={(field, val) => updateSlot(i, field, val)}
+                    onRemove={() => setSlots(slots.filter((_, idx) => idx !== i))} />
                 ))}
               </div>
-              <div className="flex gap-4 mb-6">
-                <button onClick={() => setPollForm({ ...pollForm, options: [...pollForm.options, ''] })} className="text-base text-[#886c44] font-bold hover:text-[#6d5436] transition">+ Add option</button>
-                {pollForm.options.length > 2 && (
-                  <button onClick={() => setPollForm({ ...pollForm, options: pollForm.options.slice(0, -1) })} className="text-base text-[#9e8b6f] font-bold hover:text-[#2c2418] transition">− Remove last</button>
-                )}
-              </div>
-              <button onClick={createPoll} disabled={saving === 'poll'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
-                {saving === 'poll' ? 'Saving…' : 'Create Poll'}
+              <button onClick={() => setSlots([...slots, { time_label: '', duration: '', spots: '' }])} className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition">
+                <Plus size={16} /> Add time slot
               </button>
             </div>
-            <div className="space-y-2">
-              {polls.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No polls yet.</p>}
-              {polls.map(p => (
-                <AdminCard key={p.id} title={p.question}
-                  meta={`${p.vol_poll_votes?.[0]?.count ?? 0} vote${(p.vol_poll_votes?.[0]?.count ?? 0) !== 1 ? 's' : ''}`}
-                  copied={copiedId === p.id} onCopy={() => copyLink('poll', p.id)} onDelete={() => deletePoll(p.id)}
-                  onClick={() => setDetailView({ type: 'poll', id: p.id })} />
-              ))}
-            </div>
+            <button onClick={() => createEvent('shift')} disabled={saving === 'event'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+              {saving === 'event' ? 'Saving…' : 'Create Shift Sign-up'}
+            </button>
           </div>
         )}
 
-        {/* ── Forms panel ── */}
-        {active === 'form' && (
-          <div>
-            <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
-              <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New Form</p>
-
-              <div className="space-y-4 mb-6">
-                <input
-                  placeholder="Form title"
-                  value={formMeta.title}
-                  onChange={e => setFormMeta({ ...formMeta, title: e.target.value })}
-                  className={INPUT} style={SANS}
-                />
-                <textarea
-                  placeholder="Description (optional)"
-                  value={formMeta.description}
-                  onChange={e => setFormMeta({ ...formMeta, description: e.target.value })}
-                  className={INPUT} rows={2} style={SANS}
-                />
-              </div>
-
-              <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
-              <div className="space-y-3 mb-4">
-                {formQuestions.map((q, i) => (
-                  <QuestionEditor
-                    key={q.id}
-                    question={q}
-                    index={i}
-                    onUpdate={updated => updateQuestion(i, updated)}
-                    onRemove={() => setFormQuestions(formQuestions.filter((_, idx) => idx !== i))}
-                    canRemove={formQuestions.length > 1}
-                  />
-                ))}
-              </div>
-
-              <div className="flex gap-4 mb-6">
-                <button
-                  onClick={() => setFormQuestions([...formQuestions, mkQuestion()])}
-                  className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition">
-                  <Plus size={16} /> Add question
-                </button>
-              </div>
-
-              <button
-                onClick={createForm}
-                disabled={saving === 'form'}
-                className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
-                {saving === 'form' ? 'Saving…' : 'Create Form'}
-              </button>
+        {/* ── Create Form ── */}
+        {active === 'form-create' && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New Form</p>
+            <div className="space-y-4 mb-6">
+              <input placeholder="Form title" value={formMeta.title} onChange={e => setFormMeta({ ...formMeta, title: e.target.value })} className={INPUT} style={SANS} />
+              <textarea placeholder="Description (optional)" value={formMeta.description} onChange={e => setFormMeta({ ...formMeta, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
             </div>
-
-            <div className="space-y-2">
-              {forms.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No forms yet.</p>}
-              {forms.map(f => (
-                <AdminCard
-                  key={f.id}
-                  title={f.title}
-                  meta={`${f.fields?.length ?? 0} question${(f.fields?.length ?? 0) !== 1 ? 's' : ''} · ${f.nsh_form_responses?.[0]?.count ?? 0} response${(f.nsh_form_responses?.[0]?.count ?? 0) !== 1 ? 's' : ''}`}
-                  copied={copiedId === f.id}
-                  onCopy={() => copyLink('form', f.id)}
-                  onDelete={() => deleteForm(f.id)}
-                  onClick={() => setDetailView({ type: 'form', id: f.id })}
-                />
+            <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
+            <div className="space-y-3 mb-4">
+              {formQuestions.map((q, i) => (
+                <QuestionEditor key={q.id} question={q} index={i}
+                  onUpdate={updated => updateQuestion(i, updated)}
+                  onRemove={() => setFormQuestions(formQuestions.filter((_, idx) => idx !== i))}
+                  canRemove={formQuestions.length > 1} />
               ))}
             </div>
+            <button onClick={() => setFormQuestions([...formQuestions, mkQuestion()])} className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition mb-6">
+              <Plus size={16} /> Add question
+            </button>
+            <button onClick={createForm} disabled={saving === 'form'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+              {saving === 'form' ? 'Saving…' : 'Create Form'}
+            </button>
           </div>
         )}
+
+        {/* ── Create Poll ── */}
+        {active === 'poll-create' && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">New Poll</p>
+            <input placeholder="Poll question" value={pollForm.question} onChange={e => setPollForm({ ...pollForm, question: e.target.value })} className={`${INPUT} mb-4`} style={SANS} />
+            <div className="space-y-3 mb-3">
+              {pollForm.options.map((opt, i) => (
+                <input key={i} placeholder={`Option ${i + 1}`} value={opt}
+                  onChange={e => { const o = [...pollForm.options]; o[i] = e.target.value; setPollForm({ ...pollForm, options: o }) }}
+                  className={INPUT} style={SANS} />
+              ))}
+            </div>
+            <div className="flex gap-4 mb-6">
+              <button onClick={() => setPollForm({ ...pollForm, options: [...pollForm.options, ''] })} className="text-base text-[#886c44] font-bold hover:text-[#6d5436] transition">+ Add option</button>
+              {pollForm.options.length > 2 && (
+                <button onClick={() => setPollForm({ ...pollForm, options: pollForm.options.slice(0, -1) })} className="text-base text-[#9e8b6f] font-bold hover:text-[#2c2418] transition">− Remove last</button>
+              )}
+            </div>
+            <button onClick={createPoll} disabled={saving === 'poll'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+              {saving === 'poll' ? 'Saving…' : 'Create Poll'}
+            </button>
+          </div>
+        )}
+
+        {/* ── View RSVP Events ── */}
+        {active === 'rsvp-view' && (
+          <div className="space-y-2">
+            {rsvpEvents.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No RSVP events yet.</p>}
+            {rsvpEvents.map(e => {
+              const n = e.vol_event_responses?.[0]?.count ?? 0
+              return <AdminCard key={e.id} title={e.title} subtitle={e.date || ''} meta={`${n} response${n !== 1 ? 's' : ''}`}
+                copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title)} onDelete={() => deleteEvent(e.id)}
+                onClick={() => setDetailView({ type: 'event', id: e.id })} />
+            })}
+          </div>
+        )}
+
+        {/* ── View Shift Sign-ups ── */}
+        {active === 'shift-view' && (
+          <div className="space-y-2">
+            {shiftEvents.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No shift sign-ups yet.</p>}
+            {shiftEvents.map(e => {
+              const n = e.vol_shift_slots?.[0]?.count ?? 0
+              return <AdminCard key={e.id} title={e.title} subtitle={e.date || ''} meta={`${n} time slot${n !== 1 ? 's' : ''}`}
+                copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title)} onDelete={() => deleteEvent(e.id)}
+                onClick={() => setDetailView({ type: 'event', id: e.id })} />
+            })}
+          </div>
+        )}
+
+        {/* ── View Forms ── */}
+        {active === 'form-view' && (
+          <div className="space-y-2">
+            {forms.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No forms yet.</p>}
+            {forms.map(f => {
+              const q = f.fields?.length ?? 0; const r = f.nsh_form_responses?.[0]?.count ?? 0
+              return <AdminCard key={f.id} title={f.title} meta={`${q} question${q !== 1 ? 's' : ''} · ${r} response${r !== 1 ? 's' : ''}`}
+                copied={copiedId === f.id} onCopy={() => copyLink('form', f.id)} onDelete={() => deleteForm(f.id)}
+                onClick={() => setDetailView({ type: 'form', id: f.id })} />
+            })}
+          </div>
+        )}
+
+        {/* ── View Polls ── */}
+        {active === 'poll-view' && (
+          <div className="space-y-2">
+            {polls.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No polls yet.</p>}
+            {polls.map(p => {
+              const n = p.vol_poll_votes?.[0]?.count ?? 0
+              return <AdminCard key={p.id} title={p.question} meta={`${n} vote${n !== 1 ? 's' : ''}`}
+                copied={copiedId === p.id} onCopy={() => copyLink('poll', p.id)} onDelete={() => deletePoll(p.id)}
+                onClick={() => setDetailView({ type: 'poll', id: p.id })} />
+            })}
+          </div>
+        )}
+
       </div>
 
       <footer className="bg-white border-t-2 border-[#e8e4dc]">
