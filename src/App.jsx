@@ -1527,7 +1527,7 @@ function AdminDashboard() {
     <div className="min-h-screen bg-[#f5f0e7] flex flex-col" style={SANS}>
       <TopBar />
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
-        <h2 className="text-5xl font-normal mb-10 text-[#2c2418]" style={SERIF}>Volunteer Hub</h2>
+        <h2 className="text-5xl font-normal mb-10 text-[#2c2418]" style={SERIF}>Forms & Outreach</h2>
 
         {/* ── Create ── */}
         <p className="text-xs font-bold uppercase tracking-widest text-[#9e8b6f] mb-3">Create</p>
@@ -1729,9 +1729,11 @@ function AdminCard({ title, subtitle, meta, copied, onCopy, onDelete, onClick })
   return (
     <div className="flex justify-between items-center bg-white border-2 border-[#e8e4dc] rounded-xl hover:border-[#886c44] transition overflow-hidden">
       <button onClick={onClick} className="flex-1 min-w-0 text-left px-5 py-4 hover:bg-[#faf8f4] transition">
-        <p className="font-normal text-[#2c2418] truncate text-lg" style={SERIF}>{title}</p>
-        {subtitle && <p className="text-sm text-[#9e8b6f] font-bold mt-0.5">{subtitle}</p>}
-        {meta    && <p className="text-sm text-[#886c44] font-bold mt-0.5">{meta}</p>}
+        <div className="flex items-baseline justify-between gap-4">
+          <p className="font-normal text-[#2c2418] truncate text-lg" style={SERIF}>{title}</p>
+          {subtitle && <p className="text-sm text-[#9e8b6f] font-bold flex-shrink-0">{subtitle}</p>}
+        </div>
+        {meta && <p className="text-sm text-[#886c44] font-bold mt-0.5">{meta}</p>}
       </button>
       <div className="flex items-center gap-2 flex-shrink-0">
         <button onClick={onCopy} className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-[#f0e6d8] transition text-sm font-bold" style={{ color: copied ? '#886c44' : '#9e8b6f' }}>
