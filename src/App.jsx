@@ -25,6 +25,11 @@ const fmtDate = d => {
   const [y, m, day] = d.split('-').map(Number)
   return new Date(y, m - 1, day).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
+const fmtDateShort = d => {
+  if (!d) return ''
+  const [y, m, day] = d.split('-').map(Number)
+  return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
 const fmtTime = t => {
   if (!t) return null
   if (/[a-zA-Z–-]/.test(t.replace(/^\d{2}:\d{2}$/, ''))) return t
@@ -1640,7 +1645,7 @@ function AdminDashboard() {
             {rsvpEvents.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No RSVP events yet.</p>}
             {rsvpEvents.map(e => {
               const n = e.vol_event_responses?.[0]?.count ?? 0
-              return <AdminCard key={e.id} title={e.title} subtitle={e.date || ''} meta={`${n} response${n !== 1 ? 's' : ''}`}
+              return <AdminCard key={e.id} title={e.title} subtitle={fmtDateShort(e.date)} meta={`${n} response${n !== 1 ? 's' : ''}`}
                 copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title)} onDelete={() => deleteEvent(e.id)}
                 onClick={() => setDetailView({ type: 'event', id: e.id })} />
             })}
@@ -1653,7 +1658,7 @@ function AdminDashboard() {
             {shiftEvents.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No shift sign-ups yet.</p>}
             {shiftEvents.map(e => {
               const n = e.vol_shift_slots?.[0]?.count ?? 0
-              return <AdminCard key={e.id} title={e.title} subtitle={e.date || ''} meta={`${n} time slot${n !== 1 ? 's' : ''}`}
+              return <AdminCard key={e.id} title={e.title} subtitle={fmtDateShort(e.date)} meta={`${n} time slot${n !== 1 ? 's' : ''}`}
                 copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title)} onDelete={() => deleteEvent(e.id)}
                 onClick={() => setDetailView({ type: 'event', id: e.id })} />
             })}
