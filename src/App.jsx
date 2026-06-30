@@ -1509,7 +1509,7 @@ function AdminDashboard() {
         <p className="text-xs font-bold uppercase tracking-widest text-[#9e8b6f] mb-3">Create</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {tile('rsvp-create',  'RSVP Event')}
-          {tile('shift-create', 'Volunteer Shift Sign-up')}
+          {tile('shift-create', 'Volunteer Shifts')}
           {tile('form-create',  'Form')}
           {tile('poll-create',  'Poll')}
         </div>
@@ -1518,7 +1518,7 @@ function AdminDashboard() {
         <p className="text-xs font-bold uppercase tracking-widest text-[#9e8b6f] mb-3">View & Manage</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {tile('rsvp-view',  'RSVP Events',              `${rsvpEvents.length} created`)}
-          {tile('shift-view', 'Volunteer Shift Sign-ups', `${shiftEvents.length} created`)}
+          {tile('shift-view', 'Volunteer Shifts',         `${shiftEvents.length} created`)}
           {tile('form-view',  'Forms',                    `${forms.length} created`)}
           {tile('poll-view',  'Polls',                    `${polls.length} created`)}
         </div>
