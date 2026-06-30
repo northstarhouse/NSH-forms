@@ -914,13 +914,14 @@ function EventDetail({ id, onBack }) {
 
   const handleSave = async () => {
     setSaving(true)
-    await supabase.from('vol_events').update({
+    const { error: evErr } = await supabase.from('vol_events').update({
       title: editForm.title.trim(),
       date: editForm.date || null,
       time: editForm.time || null,
       description: editForm.description.trim() || null,
       options: event.event_type === 'rsvp' ? editOptions.filter(o => o.trim()) : [],
     }).eq('id', id)
+    if (evErr) { alert('Save failed: ' + evErr.message); setSaving(false); return }
     if (event.event_type === 'shift') {
       const valid = editSlots.filter(s => s.time_label?.trim())
       const originalIds = slots.map(s => s.id)
@@ -1177,7 +1178,8 @@ function PollDetail({ id, onBack }) {
   const handleSave = async () => {
     setSaving(true)
     const opts = editPoll.options.filter(o => o.trim())
-    await supabase.from('vol_polls').update({ question: editPoll.question.trim(), options: opts }).eq('id', id)
+    const { error } = await supabase.from('vol_polls').update({ question: editPoll.question.trim(), options: opts }).eq('id', id)
+    if (error) { alert('Save failed: ' + error.message); setSaving(false); return }
     const { data: po } = await supabase.from('vol_polls').select('*').eq('id', id).single()
     setPoll(po)
     setSaving(false)
@@ -1313,7 +1315,8 @@ function FormDetail({ id, onBack }) {
         id, type, label: label.trim(), required,
         ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
       }))
-    await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, fields }).eq('id', id)
+    const { error } = await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, fields }).eq('id', id)
+    if (error) { alert('Save failed: ' + error.message); setSaving(false); return }
     const { data: fo } = await supabase.from('nsh_forms').select('*').eq('id', id).single()
     setForm(fo)
     setEditFields(fo.fields || [])

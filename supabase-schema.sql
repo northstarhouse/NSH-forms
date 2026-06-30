@@ -75,16 +75,19 @@ alter table vol_poll_votes       enable row level security;
 
 create policy "public read"   on vol_events           for select using (true);
 create policy "public insert" on vol_events           for insert with check (true);
+create policy "public update" on vol_events           for update using (true);
 create policy "public delete" on vol_events           for delete using (true);
 create policy "public read"   on vol_event_responses  for select using (true);
 create policy "public insert" on vol_event_responses  for insert with check (true);
 create policy "public read"   on vol_shift_slots      for select using (true);
 create policy "public insert" on vol_shift_slots      for insert with check (true);
+create policy "public update" on vol_shift_slots      for update using (true);
 create policy "public delete" on vol_shift_slots      for delete using (true);
 create policy "public read"   on vol_slot_signups     for select using (true);
 create policy "public insert" on vol_slot_signups     for insert with check (true);
 create policy "public read"   on vol_polls            for select using (true);
 create policy "public insert" on vol_polls            for insert with check (true);
+create policy "public update" on vol_polls            for update using (true);
 create policy "public delete" on vol_polls            for delete using (true);
 create policy "public read"   on vol_poll_votes       for select using (true);
 create policy "public insert" on vol_poll_votes       for insert with check (true);
@@ -124,6 +127,7 @@ alter table nsh_form_responses enable row level security;
 
 create policy "public read"   on nsh_forms          for select using (true);
 create policy "public insert" on nsh_forms          for insert with check (true);
+create policy "public update" on nsh_forms          for update using (true);
 create policy "public delete" on nsh_forms          for delete using (true);
 create policy "public read"   on nsh_form_responses for select using (true);
 create policy "public insert" on nsh_form_responses for insert with check (true);
