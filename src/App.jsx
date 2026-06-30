@@ -59,18 +59,16 @@ function EventTopBar() {
 
 function TopBar({ onBack }) {
   return (
-    <div className="bg-white border-b-2 border-[#e8e4dc] sticky top-0 z-10">
-      <div className="max-w-4xl mx-auto px-6 py-5">
+    <div className="bg-[#f5f0e7] border-b border-[#e0d5c0] sticky top-0 z-10">
+      <div className="max-w-4xl mx-auto px-6 py-3 flex justify-between items-center">
         {onBack ? (
-          <button onClick={onBack} className="text-base text-[#886c44] flex items-center gap-2 hover:text-[#6d5436] font-bold" style={SANS}>
-            <ArrowLeft size={18} /> Back
+          <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm hover:text-[#6d5436] transition" style={SANS}>
+            <ArrowLeft size={16} /> Dashboard
           </button>
         ) : (
-          <div>
-            <h1 className="text-2xl font-bold text-[#2c2418]">North Star House</h1>
-            <p className="text-xs text-[#886c44] font-semibold tracking-widest uppercase mt-0.5">Volunteer Engagement Hub</p>
-          </div>
+          <div />
         )}
+        <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-16 w-auto" />
       </div>
     </div>
   )
@@ -1175,12 +1173,9 @@ function PollDetail({ id, onBack }) {
   votes.forEach(v => { if (counts[v.option] !== undefined) counts[v.option]++ })
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
-      <TopBar />
+    <div className="min-h-screen bg-[#f5f0e7] flex flex-col" style={SANS}>
+      <TopBar onBack={onBack} />
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
-        <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm mb-8 hover:text-[#6d5436] transition">
-          <ArrowLeft size={16} /> Back to dashboard
-        </button>
 
         {editing ? (
           <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-6">
@@ -1310,12 +1305,9 @@ function FormDetail({ id, onBack }) {
   if (!form)   return <NotFound />
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
-      <TopBar />
+    <div className="min-h-screen bg-[#f5f0e7] flex flex-col" style={SANS}>
+      <TopBar onBack={onBack} />
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
-        <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm mb-8 hover:text-[#6d5436] transition">
-          <ArrowLeft size={16} /> Back to dashboard
-        </button>
 
         {editing ? (
           <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-6">
@@ -1535,7 +1527,7 @@ function AdminDashboard() {
   if (detailView?.type === 'form')  return <FormDetail  id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] flex flex-col" style={SANS}>
+    <div className="min-h-screen bg-[#f5f0e7] flex flex-col" style={SANS}>
       <TopBar />
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
         <h2 className="text-5xl font-normal mb-2 text-[#2c2418]" style={SERIF}>Volunteer Hub</h2>
