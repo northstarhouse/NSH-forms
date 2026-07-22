@@ -75,6 +75,31 @@ export function groupFieldsBySection(fields) {
   return groups
 }
 
+// Cleans + trims a raw editor fields array before saving to Supabase.
+// A field of type 'group' bundles several sub-questions ("parts") that are answered
+// together and stored as one field with a nested { partId: value } answer — it's still
+// "one question" in the list, just made of several parts. Regular fields are unchanged.
+export function normalizeFields(fields) {
+  return (fields || [])
+    .filter(q => q.type === 'group' ? (q.parts || []).some(p => p.label.trim()) : q.label.trim())
+    .map(({ id, type, label, required, options, section, sectionEmail, parts }) => {
+      const base = { id, type, label: (label || '').trim(), required: !!required }
+      if (section) base.section = section
+      if (section && sectionEmail) base.sectionEmail = sectionEmail
+      if (type === 'group') {
+        base.parts = (parts || [])
+          .filter(p => p.label.trim())
+          .map(({ id, type, label, required, options }) => ({
+            id, type, label: label.trim(), required: !!required,
+            ...(['multiple_choice', 'checkboxes'].includes(type) && { options: (options || []).filter(o => o.trim()) })
+          }))
+      } else if (['multiple_choice', 'checkboxes'].includes(type)) {
+        base.options = (options || []).filter(o => o.trim())
+      }
+      return base
+    })
+}
+
 // ─── Shared UI ─────────────────────────────────────────────────────────────────
 
 import { ArrowLeft } from 'lucide-react'

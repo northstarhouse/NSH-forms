@@ -8,8 +8,28 @@ const AdminDashboard = lazy(() => import('./AdminDashboard.jsx'))
 
 // ─── Form: Question input renderer ────────────────────────────────────────────
 
-function QuestionInput({ question: q, value, onChange }) {
+function QuestionInput({ question: q, value, onChange, errors = {} }) {
   switch (q.type) {
+    case 'group':
+      return (
+        <div className="space-y-5">
+          {(q.parts || []).map(part => (
+            <div key={part.id}>
+              <p className="text-sm text-[#2c2418] font-bold mb-1">
+                {part.label}
+                {part.required && <span className="text-red-500 ml-1">*</span>}
+              </p>
+              {errors[part.id] && <p className="text-xs text-red-500 font-bold mb-1">Required.</p>}
+              <QuestionInput
+                question={part}
+                value={value?.[part.id]}
+                onChange={v => onChange({ ...(value || {}), [part.id]: v })}
+              />
+            </div>
+          ))}
+        </div>
+      )
+
     case 'short_text':
       return <input type="text" value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Your answer" className={INPUT} style={SANS} />
 
@@ -84,9 +104,11 @@ function QuestionInput({ question: q, value, onChange }) {
 
 // Renders the aggregated summary content for one question (label + values across all responses).
 // Returns null if nobody answered it. No outer border/margin — caller wraps it.
-function renderQuestionSummary(q, responses) {
+// getVal defaults to reading r.answers[q.id]; group parts pass a getter that reaches into the nested answer.
+function renderQuestionSummary(q, responses, getVal) {
+  getVal = getVal || (r => r.answers?.[q.id])
   const vals = responses
-    .map(r => r.answers?.[q.id])
+    .map(getVal)
     .filter(v => v !== undefined && v !== '' && v !== null && !(Array.isArray(v) && v.length === 0))
   if (!vals.length) return null
 
@@ -200,6 +222,26 @@ function renderQuestionSummary(q, responses) {
   return null
 }
 
+// Summary content for one field, handling 'group' fields by nesting each part's summary
+// under the group's own heading. Returns null if nobody answered anything in it.
+function fieldSummaryContent(q, responses) {
+  if (q.type === 'group') {
+    const parts = (q.parts || [])
+      .map(part => ({ part, content: renderQuestionSummary(part, responses, r => r.answers?.[q.id]?.[part.id]) }))
+      .filter(x => x.content)
+    if (!parts.length) return null
+    return (
+      <>
+        {q.label && <p className="text-base font-bold text-[#2c2418] mb-4">{q.label}</p>}
+        <div className="space-y-6">
+          {parts.map(({ part, content }) => <div key={part.id}>{content}</div>)}
+        </div>
+      </>
+    )
+  }
+  return renderQuestionSummary(q, responses)
+}
+
 function FormSummary({ form, responses }) {
   if (!responses.length) return null
   const total = responses.length
@@ -213,7 +255,7 @@ function FormSummary({ form, responses }) {
       {groups.map((g, gi) => {
         if (!g.section) {
           const q = g.fields[0]
-          const content = renderQuestionSummary(q, responses)
+          const content = fieldSummaryContent(q, responses)
           if (!content) return null
           return (
             <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
@@ -221,7 +263,7 @@ function FormSummary({ form, responses }) {
             </div>
           )
         }
-        const blocks = g.fields.map(q => ({ q, content: renderQuestionSummary(q, responses) })).filter(b => b.content)
+        const blocks = g.fields.map(q => ({ q, content: fieldSummaryContent(q, responses) })).filter(b => b.content)
         if (!blocks.length) return null
         return (
           <div key={gi} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
@@ -256,7 +298,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
               </p>
               {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
               <div className="mt-4">
-                <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q.id, v)} />
+                <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
               </div>
             </div>
           )
@@ -276,7 +318,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
                   </p>
                   {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
                   <div className="mt-3">
-                    <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q.id, v)} />
+                    <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
                   </div>
                 </div>
               ))}
@@ -305,7 +347,7 @@ function FormPage({ id }) {
       if (!f) { setLoading(false); return }
       setForm(f)
       const init = {}
-      ;(f.fields || []).forEach(q => { init[q.id] = q.type === 'checkboxes' ? [] : '' })
+      ;(f.fields || []).forEach(q => { init[q.id] = q.type === 'group' ? {} : q.type === 'checkboxes' ? [] : '' })
       setAnswers(init)
       setLoading(false)
     }
@@ -315,6 +357,16 @@ function FormPage({ id }) {
   const handleSubmit = async () => {
     const errs = {}
     ;(form.fields || []).forEach(q => {
+      if (q.type === 'group') {
+        let groupInvalid = false
+        ;(q.parts || []).forEach(part => {
+          if (!part.required) return
+          const v = answers[q.id]?.[part.id]
+          if (Array.isArray(v) ? v.length === 0 : !String(v ?? '').trim()) { errs[part.id] = true; groupInvalid = true }
+        })
+        if (groupInvalid) errs[q.id] = true
+        return
+      }
       if (!q.required) return
       const v = answers[q.id]
       if (Array.isArray(v) ? v.length === 0 : !String(v ?? '').trim()) errs[q.id] = true
@@ -358,9 +410,13 @@ function FormPage({ id }) {
               form={form}
               answers={answers}
               errors={errors}
-              onAnswer={(id, v) => {
-                setAnswers(a => ({ ...a, [id]: v }))
-                setErrors(e => ({ ...e, [id]: false }))
+              onAnswer={(field, v) => {
+                setAnswers(a => ({ ...a, [field.id]: v }))
+                setErrors(e => {
+                  const next = { ...e, [field.id]: false }
+                  if (field.type === 'group') (field.parts || []).forEach(p => { next[p.id] = false })
+                  return next
+                })
               }}
             />
             <button

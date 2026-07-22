@@ -4,7 +4,7 @@ import { supabase } from './supabase'
 import {
   FONT, DISPLAY, SERIF, SANS, INPUT, QUESTION_TYPES,
   slugify, fmtDateShort, genId, mkQuestion,
-  parseRoster, fieldsFromRoster, groupFieldsBySection,
+  parseRoster, fieldsFromRoster, groupFieldsBySection, normalizeFields,
   TopBar, LoadingScreen, NotFound,
 } from './shared.jsx'
 
@@ -45,10 +45,149 @@ function SlotCard({ slot, index, total, onChange, onRemove }) {
   )
 }
 
+// ─── Admin: one part of a grouped ("Add on") question ──────────────────────────
+
+function PartEditor({ part, index, onUpdate, onRemove, canRemove }) {
+  const hasOptions = ['multiple_choice', 'checkboxes'].includes(part.type)
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2 items-center flex-wrap">
+        <select
+          value={part.type}
+          onChange={e => onUpdate({ ...part, type: e.target.value })}
+          className="p-2.5 border-2 border-[#d9cec2] rounded-lg text-sm font-bold focus:outline-none focus:border-[#886c44] bg-white text-[#2c2418] flex-shrink-0"
+          style={SANS}>
+          {QUESTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+        <input
+          placeholder={`Part ${index + 1} label`}
+          value={part.label}
+          onChange={e => onUpdate({ ...part, label: e.target.value })}
+          className={`${INPUT} flex-1 min-w-[140px]`}
+          style={SANS}
+        />
+        {canRemove && (
+          <button onClick={onRemove} title="Remove part" className="text-[#9e8b6f] hover:text-red-500 transition flex-shrink-0">
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      {hasOptions && (
+        <div className="space-y-2 ml-1">
+          {(part.options || []).map((opt, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <input
+                placeholder={`Option ${i + 1}`}
+                value={opt}
+                onChange={e => { const o = [...part.options]; o[i] = e.target.value; onUpdate({ ...part, options: o }) }}
+                className={`${INPUT} flex-1`}
+                style={SANS}
+              />
+              {part.options.length > 2 && (
+                <button onClick={() => onUpdate({ ...part, options: part.options.filter((_, idx) => idx !== i) })}
+                  className="text-[#9e8b6f] hover:text-red-500 transition flex-shrink-0">
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            onClick={() => onUpdate({ ...part, options: [...(part.options || []), ''] })}
+            className="flex items-center gap-1 text-sm text-[#886c44] font-bold hover:text-[#6d5436] transition">
+            <Plus size={14} /> Add option
+          </button>
+        </div>
+      )}
+
+      <label className="flex items-center gap-2 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={part.required}
+          onChange={e => onUpdate({ ...part, required: e.target.checked })}
+          className="w-4 h-4 accent-[#886c44]"
+        />
+        <span className="text-sm font-bold text-[#9e8b6f]">Required</span>
+      </label>
+    </div>
+  )
+}
+
 // ─── Admin: Question editor row ────────────────────────────────────────────────
 
 function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove, onDuplicate, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) {
   const hasOptions = ['multiple_choice', 'checkboxes'].includes(q.type)
+
+  const moveControls = (
+    <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
+      <button onClick={onMoveUp} disabled={!canMoveUp} title="Move up"
+        className="p-1 text-[#9e8b6f] hover:text-[#2c2418] transition disabled:opacity-25">
+        <ArrowUp size={15} />
+      </button>
+      <button onClick={onMoveDown} disabled={!canMoveDown} title="Move down"
+        className="p-1 text-[#9e8b6f] hover:text-[#2c2418] transition disabled:opacity-25">
+        <ArrowDown size={15} />
+      </button>
+      <button onClick={onDuplicate} title="Duplicate"
+        className="p-1 text-[#9e8b6f] hover:text-[#886c44] transition">
+        <Copy size={15} />
+      </button>
+      {canRemove && (
+        <button onClick={onRemove} title="Remove"
+          className="p-1 text-[#9e8b6f] hover:text-red-500 transition">
+          <X size={15} />
+        </button>
+      )}
+    </div>
+  )
+
+  if (q.type === 'group') {
+    return (
+      <div className="bg-[#faf8f4] border-2 border-[#e8e4dc] rounded-xl p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex-1 space-y-4">
+            {q.section && (
+              <p className="text-xs font-bold text-[#886c44] uppercase tracking-wide">{q.section}</p>
+            )}
+            <input
+              placeholder={`Question ${index + 1} heading (optional)`}
+              value={q.label}
+              onChange={e => onUpdate({ ...q, label: e.target.value })}
+              className={INPUT}
+              style={SANS}
+            />
+            <div className="space-y-4 pl-4 border-l-2 border-[#d9cec2]">
+              {(q.parts || []).map((part, pi) => (
+                <PartEditor key={part.id} part={part} index={pi}
+                  onUpdate={updated => { const parts = [...q.parts]; parts[pi] = updated; onUpdate({ ...q, parts }) }}
+                  onRemove={() => onUpdate({ ...q, parts: q.parts.filter((_, idx) => idx !== pi) })}
+                  canRemove={q.parts.length > 1} />
+              ))}
+            </div>
+            <button
+              onClick={() => onUpdate({ ...q, parts: [...(q.parts || []), mkQuestion()] })}
+              className="flex items-center gap-1 text-sm text-[#886c44] font-bold hover:text-[#6d5436] transition">
+              <Plus size={14} /> Add another question
+            </button>
+          </div>
+          {moveControls}
+        </div>
+      </div>
+    )
+  }
+
+  const handleAddOn = () => {
+    const firstPart = {
+      id: genId(), type: q.type, label: '', required: q.required,
+      ...(hasOptions && { options: (q.options && q.options.length ? q.options : ['', '']) }),
+    }
+    onUpdate({
+      id: q.id, type: 'group', label: q.label, required: false,
+      ...(q.section && { section: q.section, ...(q.sectionEmail && { sectionEmail: q.sectionEmail }) }),
+      parts: [firstPart, mkQuestion()],
+    })
+  }
+
   return (
     <div className="bg-[#faf8f4] border-2 border-[#e8e4dc] rounded-xl p-5">
       <div className="flex items-start gap-3">
@@ -100,37 +239,24 @@ function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove, onD
             </div>
           )}
 
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={q.required}
-              onChange={e => onUpdate({ ...q, required: e.target.checked })}
-              className="w-4 h-4 accent-[#886c44]"
-            />
-            <span className="text-sm font-bold text-[#9e8b6f]">Required</span>
-          </label>
+          <div className="flex items-center gap-5 flex-wrap">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={q.required}
+                onChange={e => onUpdate({ ...q, required: e.target.checked })}
+                className="w-4 h-4 accent-[#886c44]"
+              />
+              <span className="text-sm font-bold text-[#9e8b6f]">Required</span>
+            </label>
+            <button type="button" onClick={handleAddOn}
+              className="flex items-center gap-1 text-sm text-[#886c44] font-bold hover:text-[#6d5436] transition">
+              <Plus size={14} /> Add on (turn into multiple questions)
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
-          <button onClick={onMoveUp} disabled={!canMoveUp} title="Move up"
-            className="p-1 text-[#9e8b6f] hover:text-[#2c2418] transition disabled:opacity-25">
-            <ArrowUp size={15} />
-          </button>
-          <button onClick={onMoveDown} disabled={!canMoveDown} title="Move down"
-            className="p-1 text-[#9e8b6f] hover:text-[#2c2418] transition disabled:opacity-25">
-            <ArrowDown size={15} />
-          </button>
-          <button onClick={onDuplicate} title="Duplicate"
-            className="p-1 text-[#9e8b6f] hover:text-[#886c44] transition">
-            <Copy size={15} />
-          </button>
-          {canRemove && (
-            <button onClick={onRemove} title="Remove"
-              className="p-1 text-[#9e8b6f] hover:text-red-500 transition">
-              <X size={15} />
-            </button>
-          )}
-        </div>
+        {moveControls}
       </div>
     </div>
   )
@@ -208,12 +334,7 @@ function TemplateDetail({ id, onBack }) {
 
   const handleSave = async () => {
     setSaving(true)
-    const qs = questions
-      .filter(q => q.label.trim())
-      .map(({ id, type, label, required, options }) => ({
-        id, type, label: label.trim(), required,
-        ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
-      }))
+    const qs = normalizeFields(questions)
     const { error } = await supabase.from('nsh_templates').update({ name: name.trim(), questions: qs }).eq('id', id)
     if (error) { alert('Save failed: ' + error.message); setSaving(false); return }
     setSaving(false)
@@ -669,6 +790,19 @@ function PollDetail({ id, onBack }) {
 
 // ─── Admin: Form detail + edit ──────────────────────────────────────────────────
 
+// Flattens one field's answer into displayable { id, label, ans } rows.
+// A 'group' field expands into one row per answered part; other fields yield at most one row.
+function answerEntries(field, answers) {
+  if (field.type === 'group') {
+    return (field.parts || [])
+      .map(part => ({ id: part.id, label: part.label, ans: answers?.[field.id]?.[part.id] }))
+      .filter(({ ans }) => ans !== undefined && ans !== null && ans !== '')
+  }
+  const ans = answers?.[field.id]
+  if (ans === undefined || ans === null || ans === '') return []
+  return [{ id: field.id, label: field.label, ans }]
+}
+
 function FormDetail({ id, onBack, templates }) {
   const [form,      setForm]      = useState(null)
   const [responses, setResponses] = useState([])
@@ -694,13 +828,7 @@ function FormDetail({ id, onBack, templates }) {
 
   const handleSave = async () => {
     setSaving(true)
-    const fields = editFields
-      .filter(q => q.label.trim())
-      .map(({ id, type, label, required, options, section, sectionEmail }) => ({
-        id, type, label: label.trim(), required,
-        ...(section && { section, ...(sectionEmail && { sectionEmail }) }),
-        ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
-      }))
+    const fields = normalizeFields(editFields)
     const { error } = await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, fields }).eq('id', id)
     if (error) { alert('Save failed: ' + error.message); setSaving(false); return }
     const { data: fo } = await supabase.from('nsh_forms').select('*').eq('id', id).single()
@@ -781,27 +909,41 @@ function FormDetail({ id, onBack, templates }) {
                     {groupFieldsBySection(form.fields || []).map((g, gi) => {
                       if (!g.section) {
                         const field = g.fields[0]
-                        const ans = r.answers?.[field.id]
-                        if (ans === undefined || ans === null || ans === '') return null
+                        const entries = answerEntries(field, r.answers)
+                        if (!entries.length) return null
+                        if (field.type === 'group') {
+                          return (
+                            <div key={field.id} className="bg-[#faf8f4] rounded-lg p-4">
+                              {field.label && <p className="text-sm font-bold text-[#886c44] mb-2">{field.label}</p>}
+                              <div className="space-y-2">
+                                {entries.map(e => (
+                                  <div key={e.id}>
+                                    <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{e.label}</p>
+                                    <p className="text-base text-[#2c2418]">{Array.isArray(e.ans) ? e.ans.join(', ') : String(e.ans)}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        }
+                        const e = entries[0]
                         return (
                           <div key={field.id}>
-                            <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{field.label}</p>
-                            <p className="text-base text-[#2c2418]">{Array.isArray(ans) ? ans.join(', ') : String(ans)}</p>
+                            <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{e.label}</p>
+                            <p className="text-base text-[#2c2418]">{Array.isArray(e.ans) ? e.ans.join(', ') : String(e.ans)}</p>
                           </div>
                         )
                       }
-                      const items = g.fields
-                        .map(field => ({ field, ans: r.answers?.[field.id] }))
-                        .filter(({ ans }) => ans !== undefined && ans !== null && ans !== '')
+                      const items = g.fields.flatMap(field => answerEntries(field, r.answers))
                       if (!items.length) return null
                       return (
                         <div key={gi} className="bg-[#faf8f4] rounded-lg p-4">
                           <p className="text-sm font-bold text-[#886c44] mb-2">{g.section}</p>
                           <div className="space-y-2">
-                            {items.map(({ field, ans }) => (
-                              <div key={field.id}>
-                                <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{field.label}</p>
-                                <p className="text-base text-[#2c2418]">{Array.isArray(ans) ? ans.join(', ') : String(ans)}</p>
+                            {items.map(e => (
+                              <div key={e.id}>
+                                <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{e.label}</p>
+                                <p className="text-base text-[#2c2418]">{Array.isArray(e.ans) ? e.ans.join(', ') : String(e.ans)}</p>
                               </div>
                             ))}
                           </div>
@@ -898,13 +1040,7 @@ function AdminDashboard() {
   const createForm = async () => {
     if (!formMeta.title.trim()) return
     setSaving('form')
-    const fields = formQuestions
-      .filter(q => q.label.trim())
-      .map(({ id, type, label, required, options, section, sectionEmail }) => ({
-        id, type, label: label.trim(), required,
-        ...(section && { section, ...(sectionEmail && { sectionEmail }) }),
-        ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
-      }))
+    const fields = normalizeFields(formQuestions)
     await supabase.from('nsh_forms').insert({ title: formMeta.title.trim(), description: formMeta.description.trim() || null, fields })
     setFormMeta({ title: '', description: '' })
     setFormQuestions([mkQuestion()])
@@ -914,12 +1050,7 @@ function AdminDashboard() {
   const createTemplate = async () => {
     if (!templateMeta.name.trim()) return
     setSaving('template')
-    const questions = templateQuestions
-      .filter(q => q.label.trim())
-      .map(({ id, type, label, required, options }) => ({
-        id, type, label: label.trim(), required,
-        ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
-      }))
+    const questions = normalizeFields(templateQuestions)
     await supabase.from('nsh_templates').insert({ name: templateMeta.name.trim(), questions })
     setTemplateMeta({ name: '' })
     setTemplateQuestions([mkQuestion()])
