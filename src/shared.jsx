@@ -37,6 +37,44 @@ export const fmtTime = t => {
 export const genId      = () => Math.random().toString(36).slice(2, 10)
 export const mkQuestion = (type = 'short_text') => ({ id: genId(), type, label: '', required: false, options: ['', ''] })
 
+// ─── Roster parsing + templates ────────────────────────────────────────────────
+
+// Parses pasted lines like "Jane Smith - jane@example.com" (email optional) into { name, email }
+export function parseRoster(text) {
+  return (text || '')
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const m = line.match(/^(.+?)\s*[-–—]\s*(\S+@\S+)$/)
+      return m ? { name: m[1].trim(), email: m[2].trim() } : { name: line, email: '' }
+    })
+}
+
+// Expands a question template into one cloned copy of its questions per roster person,
+// tagging each clone with { section, sectionEmail } so it renders/groups under that person.
+export function fieldsFromRoster(template, people) {
+  const out = []
+  people.forEach(p => {
+    ;(template.questions || []).forEach(q => {
+      out.push({ ...q, id: genId(), section: p.name, sectionEmail: p.email || undefined })
+    })
+  })
+  return out
+}
+
+// Groups a flat fields array into consecutive runs sharing the same `section` (e.g. volunteer name).
+// Fields with no section each become their own single-field group.
+export function groupFieldsBySection(fields) {
+  const groups = []
+  ;(fields || []).forEach(f => {
+    const last = groups[groups.length - 1]
+    if (f.section && last && last.section === f.section) last.fields.push(f)
+    else groups.push({ section: f.section || null, fields: [f] })
+  })
+  return groups
+}
+
 // ─── Shared UI ─────────────────────────────────────────────────────────────────
 
 import { ArrowLeft } from 'lucide-react'

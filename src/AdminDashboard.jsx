@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import {
   FONT, DISPLAY, SERIF, SANS, INPUT, QUESTION_TYPES,
   slugify, fmtDateShort, genId, mkQuestion,
+  parseRoster, fieldsFromRoster, groupFieldsBySection,
   TopBar, LoadingScreen, NotFound,
 } from './shared.jsx'
 
@@ -52,6 +53,9 @@ function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove, onD
     <div className="bg-[#faf8f4] border-2 border-[#e8e4dc] rounded-xl p-5">
       <div className="flex items-start gap-3">
         <div className="flex-1 space-y-3">
+          {q.section && (
+            <p className="text-xs font-bold text-[#886c44] uppercase tracking-wide">{q.section}</p>
+          )}
           <div className="flex gap-3 flex-wrap">
             <select
               value={q.type}
@@ -127,6 +131,125 @@ function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove, onD
             </button>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Admin: Generate form sections from a roster + template ───────────────────
+
+function RosterGenerator({ templates, onGenerate }) {
+  const [templateId, setTemplateId] = useState('')
+  const [rosterText, setRosterText] = useState('')
+  const people = parseRoster(rosterText)
+
+  const handleGenerate = () => {
+    const template = templates.find(t => t.id === templateId)
+    if (!template || !people.length) return
+    onGenerate(fieldsFromRoster(template, people))
+    setRosterText('')
+  }
+
+  return (
+    <div className="bg-[#faf8f4] border-2 border-dashed border-[#d9cec2] rounded-xl p-5 mb-6">
+      <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-1">Generate sections from a roster</p>
+      <p className="text-sm text-[#9e8b6f] mb-4">
+        Paste a list of names — one per line, "Name - email" works too. Each person gets their own copy of the template's questions.
+      </p>
+      {templates.length === 0 ? (
+        <p className="text-sm text-[#9e8b6f] font-bold">Create a Question Template first, then come back here to use it.</p>
+      ) : (
+        <>
+          <select value={templateId} onChange={e => setTemplateId(e.target.value)} className={`${INPUT} mb-3`} style={SANS}>
+            <option value="">Choose a template…</option>
+            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <textarea
+            value={rosterText}
+            onChange={e => setRosterText(e.target.value)}
+            placeholder={'Jane Smith - jane@example.com\nJohn Doe - john@example.com'}
+            rows={6}
+            className={`${INPUT} mb-3`}
+            style={SANS}
+          />
+          {people.length > 0 && (
+            <p className="text-xs text-[#886c44] font-bold mb-3">{people.length} name{people.length !== 1 ? 's' : ''} detected</p>
+          )}
+          <button type="button" onClick={handleGenerate} disabled={!templateId || !people.length}
+            className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-bold hover:bg-[#6d5436] transition disabled:opacity-40">
+            Add {people.length || ''} section{people.length !== 1 ? 's' : ''} to form
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Admin: Template detail + edit ─────────────────────────────────────────────
+
+function TemplateDetail({ id, onBack }) {
+  const [template, setTemplate] = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [saving, setSaving]     = useState(false)
+  const [name, setName]         = useState('')
+  const [questions, setQuestions] = useState([])
+
+  useEffect(() => {
+    async function load() {
+      const { data: t } = await supabase.from('nsh_templates').select('*').eq('id', id).single()
+      if (!t) { setLoading(false); return }
+      setTemplate(t)
+      setName(t.name)
+      setQuestions(t.questions?.length ? t.questions : [mkQuestion()])
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  const handleSave = async () => {
+    setSaving(true)
+    const qs = questions
+      .filter(q => q.label.trim())
+      .map(({ id, type, label, required, options }) => ({
+        id, type, label: label.trim(), required,
+        ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
+      }))
+    const { error } = await supabase.from('nsh_templates').update({ name: name.trim(), questions: qs }).eq('id', id)
+    if (error) { alert('Save failed: ' + error.message); setSaving(false); return }
+    setSaving(false)
+    onBack()
+  }
+
+  if (loading)  return <LoadingScreen />
+  if (!template) return <NotFound />
+
+  return (
+    <div className="min-h-screen bg-[#f5f0e7] flex flex-col" style={SANS}>
+      <TopBar onBack={onBack} />
+      <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
+        <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">Edit Template</p>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Template name" className={`${INPUT} mb-6`} style={SANS} />
+        <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
+        <div className="space-y-3 mb-4">
+          {questions.map((q, i) => (
+            <QuestionEditor key={q.id} question={q} index={i}
+              onUpdate={updated => { const qs = [...questions]; qs[i] = updated; setQuestions(qs) }}
+              onRemove={() => setQuestions(questions.filter((_, idx) => idx !== i))}
+              canRemove={questions.length > 1}
+              onDuplicate={() => { const qs = [...questions]; qs.splice(i + 1, 0, { ...qs[i], id: genId() }); setQuestions(qs) }}
+              onMoveUp={() => { const qs = [...questions]; [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]]; setQuestions(qs) }}
+              onMoveDown={() => { const qs = [...questions]; [qs[i], qs[i + 1]] = [qs[i + 1], qs[i]]; setQuestions(qs) }}
+              canMoveUp={i > 0} canMoveDown={i < questions.length - 1} />
+          ))}
+        </div>
+        <button onClick={() => setQuestions([...questions, mkQuestion()])}
+          className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition mb-6">
+          <Plus size={16} /> Add question
+        </button>
+        <button onClick={handleSave} disabled={saving}
+          className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+          {saving ? 'Saving…' : 'Save changes'}
+        </button>
       </div>
     </div>
   )
@@ -546,7 +669,7 @@ function PollDetail({ id, onBack }) {
 
 // ─── Admin: Form detail + edit ──────────────────────────────────────────────────
 
-function FormDetail({ id, onBack }) {
+function FormDetail({ id, onBack, templates }) {
   const [form,      setForm]      = useState(null)
   const [responses, setResponses] = useState([])
   const [loading,   setLoading]   = useState(true)
@@ -573,8 +696,9 @@ function FormDetail({ id, onBack }) {
     setSaving(true)
     const fields = editFields
       .filter(q => q.label.trim())
-      .map(({ id, type, label, required, options }) => ({
+      .map(({ id, type, label, required, options, section, sectionEmail }) => ({
         id, type, label: label.trim(), required,
+        ...(section && { section, ...(sectionEmail && { sectionEmail }) }),
         ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
       }))
     const { error } = await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, fields }).eq('id', id)
@@ -601,6 +725,7 @@ function FormDetail({ id, onBack }) {
               <input value={editMeta.title} onChange={e => setEditMeta({ ...editMeta, title: e.target.value })} placeholder="Form title" className={INPUT} style={SANS} />
               <textarea placeholder="Description (optional)" value={editMeta.description} onChange={e => setEditMeta({ ...editMeta, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
             </div>
+            <RosterGenerator templates={templates || []} onGenerate={fields => setEditFields(prev => [...prev.filter(q => q.label.trim()), ...fields])} />
             <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
             <div className="space-y-3 mb-4">
               {editFields.map((q, i) => (
@@ -653,13 +778,33 @@ function FormDetail({ id, onBack }) {
                     {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                   </p>
                   <div className="space-y-3">
-                    {(form.fields || []).map(field => {
-                      const ans = r.answers?.[field.id]
-                      if (ans === undefined || ans === null || ans === '') return null
+                    {groupFieldsBySection(form.fields || []).map((g, gi) => {
+                      if (!g.section) {
+                        const field = g.fields[0]
+                        const ans = r.answers?.[field.id]
+                        if (ans === undefined || ans === null || ans === '') return null
+                        return (
+                          <div key={field.id}>
+                            <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{field.label}</p>
+                            <p className="text-base text-[#2c2418]">{Array.isArray(ans) ? ans.join(', ') : String(ans)}</p>
+                          </div>
+                        )
+                      }
+                      const items = g.fields
+                        .map(field => ({ field, ans: r.answers?.[field.id] }))
+                        .filter(({ ans }) => ans !== undefined && ans !== null && ans !== '')
+                      if (!items.length) return null
                       return (
-                        <div key={field.id}>
-                          <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{field.label}</p>
-                          <p className="text-base text-[#2c2418]">{Array.isArray(ans) ? ans.join(', ') : String(ans)}</p>
+                        <div key={gi} className="bg-[#faf8f4] rounded-lg p-4">
+                          <p className="text-sm font-bold text-[#886c44] mb-2">{g.section}</p>
+                          <div className="space-y-2">
+                            {items.map(({ field, ans }) => (
+                              <div key={field.id}>
+                                <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{field.label}</p>
+                                <p className="text-base text-[#2c2418]">{Array.isArray(ans) ? ans.join(', ') : String(ans)}</p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )
                     })}
@@ -683,9 +828,10 @@ function FormDetail({ id, onBack }) {
 // ─── Admin Dashboard ───────────────────────────────────────────────────────────
 
 function AdminDashboard() {
-  const [events, setEvents] = useState([])
-  const [polls, setPolls]   = useState([])
-  const [forms, setForms]   = useState([])
+  const [events, setEvents]       = useState([])
+  const [polls, setPolls]         = useState([])
+  const [forms, setForms]         = useState([])
+  const [templates, setTemplates] = useState([])
   const [copiedId, setCopiedId] = useState(null)
   const [active, setActive] = useState(null)
   const [saving, setSaving] = useState(null)
@@ -703,13 +849,18 @@ function AdminDashboard() {
   const [formMeta, setFormMeta]           = useState({ title: '', description: '' })
   const [formQuestions, setFormQuestions] = useState([mkQuestion()])
 
+  // Template builder
+  const [templateMeta, setTemplateMeta]           = useState({ name: '' })
+  const [templateQuestions, setTemplateQuestions] = useState([mkQuestion()])
+
   const fetchAll = useCallback(async () => {
-    const [{ data: ev }, { data: po }, { data: fo }] = await Promise.all([
+    const [{ data: ev }, { data: po }, { data: fo }, { data: tp }] = await Promise.all([
       supabase.from('vol_events').select('*, vol_event_responses(count), vol_shift_slots(count)').order('created_at', { ascending: false }),
       supabase.from('vol_polls').select('*, vol_poll_votes(count)').order('created_at', { ascending: false }),
       supabase.from('nsh_forms').select('*, nsh_form_responses(count)').order('created_at', { ascending: false }),
+      supabase.from('nsh_templates').select('*').order('created_at', { ascending: false }),
     ])
-    setEvents(ev || []); setPolls(po || []); setForms(fo || [])
+    setEvents(ev || []); setPolls(po || []); setForms(fo || []); setTemplates(tp || [])
   }, [])
 
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -749,8 +900,9 @@ function AdminDashboard() {
     setSaving('form')
     const fields = formQuestions
       .filter(q => q.label.trim())
-      .map(({ id, type, label, required, options }) => ({
+      .map(({ id, type, label, required, options, section, sectionEmail }) => ({
         id, type, label: label.trim(), required,
+        ...(section && { section, ...(sectionEmail && { sectionEmail }) }),
         ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
       }))
     await supabase.from('nsh_forms').insert({ title: formMeta.title.trim(), description: formMeta.description.trim() || null, fields })
@@ -759,9 +911,25 @@ function AdminDashboard() {
     await fetchAll(); setSaving(null)
   }
 
-  const deleteEvent = async (id) => { await supabase.from('vol_events').delete().eq('id', id); setEvents(prev => prev.filter(e => e.id !== id)) }
-  const deletePoll  = async (id) => { await supabase.from('vol_polls').delete().eq('id', id);  setPolls(prev => prev.filter(p => p.id !== id)) }
-  const deleteForm  = async (id) => { await supabase.from('nsh_forms').delete().eq('id', id);  setForms(prev => prev.filter(f => f.id !== id)) }
+  const createTemplate = async () => {
+    if (!templateMeta.name.trim()) return
+    setSaving('template')
+    const questions = templateQuestions
+      .filter(q => q.label.trim())
+      .map(({ id, type, label, required, options }) => ({
+        id, type, label: label.trim(), required,
+        ...((['multiple_choice', 'checkboxes'].includes(type)) && { options: (options || []).filter(o => o.trim()) })
+      }))
+    await supabase.from('nsh_templates').insert({ name: templateMeta.name.trim(), questions })
+    setTemplateMeta({ name: '' })
+    setTemplateQuestions([mkQuestion()])
+    await fetchAll(); setSaving(null)
+  }
+
+  const deleteEvent    = async (id) => { await supabase.from('vol_events').delete().eq('id', id);    setEvents(prev => prev.filter(e => e.id !== id)) }
+  const deletePoll     = async (id) => { await supabase.from('vol_polls').delete().eq('id', id);     setPolls(prev => prev.filter(p => p.id !== id)) }
+  const deleteForm     = async (id) => { await supabase.from('nsh_forms').delete().eq('id', id);     setForms(prev => prev.filter(f => f.id !== id)) }
+  const deleteTemplate = async (id) => { await supabase.from('nsh_templates').delete().eq('id', id); setTemplates(prev => prev.filter(t => t.id !== id)) }
 
   const copyLink = (type, id, title) => {
     const idParam = (type === 'event' && title) ? `${slugify(title)}__${id}` : id
@@ -776,9 +944,10 @@ function AdminDashboard() {
   const rsvpEvents  = events.filter(e => e.event_type === 'rsvp')
   const shiftEvents = events.filter(e => e.event_type === 'shift')
 
-  if (detailView?.type === 'event') return <EventDetail id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
-  if (detailView?.type === 'poll')  return <PollDetail  id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
-  if (detailView?.type === 'form')  return <FormDetail  id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
+  if (detailView?.type === 'event')    return <EventDetail    id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
+  if (detailView?.type === 'poll')     return <PollDetail     id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
+  if (detailView?.type === 'form')     return <FormDetail     id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} templates={templates} />
+  if (detailView?.type === 'template') return <TemplateDetail id={detailView.id} onBack={() => { setDetailView(null); fetchAll() }} />
 
   const tile = (key, label, sub) => (
     <button key={key} onClick={() => setActive(prev => prev === key ? null : key)}
@@ -797,19 +966,21 @@ function AdminDashboard() {
         {/* ── Create ── */}
         <p className="text-xs font-bold uppercase tracking-widest text-[#9e8b6f] mb-3">Create</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-          {tile('rsvp-create',  'RSVP Event')}
-          {tile('shift-create', 'Volunteer Shifts')}
-          {tile('form-create',  'Form')}
-          {tile('poll-create',  'Poll')}
+          {tile('rsvp-create',     'RSVP Event')}
+          {tile('shift-create',    'Volunteer Shifts')}
+          {tile('form-create',     'Form')}
+          {tile('poll-create',     'Poll')}
+          {tile('template-create', 'Question Template')}
         </div>
 
         {/* ── View & Manage ── */}
         <p className="text-xs font-bold uppercase tracking-widest text-[#9e8b6f] mb-3">View & Manage</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-          {tile('rsvp-view',  'RSVP Events',              `${rsvpEvents.length} created`)}
-          {tile('shift-view', 'Volunteer Shifts',         `${shiftEvents.length} created`)}
-          {tile('form-view',  'Forms',                    `${forms.length} created`)}
-          {tile('poll-view',  'Polls',                    `${polls.length} created`)}
+          {tile('rsvp-view',     'RSVP Events',              `${rsvpEvents.length} created`)}
+          {tile('shift-view',    'Volunteer Shifts',         `${shiftEvents.length} created`)}
+          {tile('form-view',     'Forms',                    `${forms.length} created`)}
+          {tile('poll-view',     'Polls',                    `${polls.length} created`)}
+          {tile('template-view', 'Templates',                `${templates.length} created`)}
         </div>
 
         {/* ── Create RSVP Event ── */}
@@ -881,6 +1052,7 @@ function AdminDashboard() {
               <input placeholder="Form title" value={formMeta.title} onChange={e => setFormMeta({ ...formMeta, title: e.target.value })} className={INPUT} style={SANS} />
               <textarea placeholder="Description (optional)" value={formMeta.description} onChange={e => setFormMeta({ ...formMeta, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
             </div>
+            <RosterGenerator templates={templates} onGenerate={fields => setFormQuestions(prev => [...prev.filter(q => q.label.trim()), ...fields])} />
             <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
             <div className="space-y-3 mb-4">
               {formQuestions.map((q, i) => (
@@ -899,6 +1071,37 @@ function AdminDashboard() {
             </button>
             <button onClick={createForm} disabled={saving === 'form'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
               {saving === 'form' ? 'Saving…' : 'Create Form'}
+            </button>
+          </div>
+        )}
+
+        {/* ── Create Question Template ── */}
+        {active === 'template-create' && (
+          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-4">
+            <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-2">New Question Template</p>
+            <p className="text-sm text-[#9e8b6f] mb-5">
+              Build a reusable set of questions (e.g. "Volunteer Status Check"). Later, paste in a roster of names on any form to generate one section per person using these questions.
+            </p>
+            <input placeholder="Template name (e.g. Volunteer Status Check)" value={templateMeta.name}
+              onChange={e => setTemplateMeta({ name: e.target.value })} className={`${INPUT} mb-6`} style={SANS} />
+            <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
+            <div className="space-y-3 mb-4">
+              {templateQuestions.map((q, i) => (
+                <QuestionEditor key={q.id} question={q} index={i}
+                  onUpdate={updated => { const qs = [...templateQuestions]; qs[i] = updated; setTemplateQuestions(qs) }}
+                  onRemove={() => setTemplateQuestions(templateQuestions.filter((_, idx) => idx !== i))}
+                  canRemove={templateQuestions.length > 1}
+                  onDuplicate={() => { const qs = [...templateQuestions]; qs.splice(i + 1, 0, { ...qs[i], id: genId() }); setTemplateQuestions(qs) }}
+                  onMoveUp={() => { const qs = [...templateQuestions]; [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]]; setTemplateQuestions(qs) }}
+                  onMoveDown={() => { const qs = [...templateQuestions]; [qs[i], qs[i + 1]] = [qs[i + 1], qs[i]]; setTemplateQuestions(qs) }}
+                  canMoveUp={i > 0} canMoveDown={i < templateQuestions.length - 1} />
+              ))}
+            </div>
+            <button onClick={() => setTemplateQuestions([...templateQuestions, mkQuestion()])} className="flex items-center gap-2 text-base text-[#886c44] font-bold hover:text-[#6d5436] transition mb-6">
+              <Plus size={16} /> Add question
+            </button>
+            <button onClick={createTemplate} disabled={saving === 'template'} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+              {saving === 'template' ? 'Saving…' : 'Save Template'}
             </button>
           </div>
         )}
@@ -979,6 +1182,19 @@ function AdminDashboard() {
           </div>
         )}
 
+        {/* ── View Templates ── */}
+        {active === 'template-view' && (
+          <div className="space-y-2">
+            {templates.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No templates yet.</p>}
+            {templates.map(t => {
+              const q = t.questions?.length ?? 0
+              return <AdminCard key={t.id} title={t.name} meta={`${q} question${q !== 1 ? 's' : ''}`}
+                onDelete={() => deleteTemplate(t.id)}
+                onClick={() => setDetailView({ type: 'template', id: t.id })} />
+            })}
+          </div>
+        )}
+
       </div>
 
       <footer className="bg-white border-t-2 border-[#e8e4dc]">
@@ -1001,10 +1217,12 @@ function AdminCard({ title, subtitle, meta, copied, onCopy, onDelete, onClick })
         {meta && <p className="text-sm text-[#886c44] font-bold mt-0.5">{meta}</p>}
       </button>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button onClick={onCopy} className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-[#f0e6d8] transition text-sm font-bold" style={{ color: copied ? '#886c44' : '#9e8b6f' }}>
-          {copied ? <Check size={15} /> : <Copy size={15} />}
-          {copied ? 'Copied!' : 'Copy link'}
-        </button>
+        {onCopy && (
+          <button onClick={onCopy} className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-[#f0e6d8] transition text-sm font-bold" style={{ color: copied ? '#886c44' : '#9e8b6f' }}>
+            {copied ? <Check size={15} /> : <Copy size={15} />}
+            {copied ? 'Copied!' : 'Copy link'}
+          </button>
+        )}
         <button onClick={onDelete} className="px-3 py-2 rounded-lg hover:bg-[#f0e6d8] text-[#9e8b6f] hover:text-[#2c2418] text-sm font-bold transition">Delete</button>
       </div>
     </div>

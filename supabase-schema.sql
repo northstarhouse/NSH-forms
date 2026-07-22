@@ -131,3 +131,26 @@ create policy "public update" on nsh_forms          for update using (true);
 create policy "public delete" on nsh_forms          for delete using (true);
 create policy "public read"   on nsh_form_responses for select using (true);
 create policy "public insert" on nsh_form_responses for insert with check (true);
+
+-- ─── Question Templates ─────────────────────────────────────────────────────────
+-- Run this block independently if the tables above already exist.
+-- A template is a reusable set of questions (same shape as nsh_forms.fields).
+-- The admin UI can expand a template x a pasted roster of names into per-person
+-- sections on a form: each generated field gets { section, sectionEmail } added,
+-- tagging which roster person it belongs to (see nsh_forms.fields comment above).
+
+drop table if exists nsh_templates cascade;
+
+create table nsh_templates (
+  id         uuid default gen_random_uuid() primary key,
+  name       text not null,
+  questions  jsonb not null default '[]',
+  created_at timestamptz default now()
+);
+
+alter table nsh_templates enable row level security;
+
+create policy "public read"   on nsh_templates for select using (true);
+create policy "public insert" on nsh_templates for insert with check (true);
+create policy "public update" on nsh_templates for update using (true);
+create policy "public delete" on nsh_templates for delete using (true);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Check, Calendar, MapPin } from 'lucide-react'
 import { supabase } from './supabase'
-import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, TopBar, LoadingScreen, NotFound } from './shared.jsx'
+import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySection, TopBar, LoadingScreen, NotFound } from './shared.jsx'
 
 const AdminDashboard = lazy(() => import('./AdminDashboard.jsx'))
 
@@ -82,129 +82,207 @@ function QuestionInput({ question: q, value, onChange }) {
 
 // ─── Form: Results summary ─────────────────────────────────────────────────────
 
+// Renders the aggregated summary content for one question (label + values across all responses).
+// Returns null if nobody answered it. No outer border/margin — caller wraps it.
+function renderQuestionSummary(q, responses) {
+  const vals = responses
+    .map(r => r.answers?.[q.id])
+    .filter(v => v !== undefined && v !== '' && v !== null && !(Array.isArray(v) && v.length === 0))
+  if (!vals.length) return null
+
+  if (q.type === 'short_text' || q.type === 'long_text') {
+    return (
+      <>
+        <p className="text-base font-bold text-[#2c2418] mb-3">{q.label}</p>
+        <div className="space-y-2">
+          {vals.map((v, i) => <p key={i} className="text-base text-[#2c2418] p-3 bg-[#faf8f4] rounded-lg">{v}</p>)}
+        </div>
+      </>
+    )
+  }
+
+  if (q.type === 'multiple_choice' || q.type === 'yes_no') {
+    const opts = q.type === 'yes_no' ? ['Yes', 'No'] : (q.options || [])
+    const counts = {}
+    opts.forEach(o => { counts[o] = 0 })
+    vals.forEach(v => { if (counts[v] !== undefined) counts[v]++ })
+    return (
+      <>
+        <p className="text-base font-bold text-[#2c2418] mb-4">{q.label}</p>
+        <div className="space-y-3">
+          {opts.map((opt, i) => {
+            const c = counts[opt] || 0
+            const pct = vals.length > 0 ? Math.round((c / vals.length) * 100) : 0
+            return (
+              <div key={i}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-bold text-[#2c2418]">{opt}</span>
+                  <span className="font-bold text-[#886c44]">{c} ({pct}%)</span>
+                </div>
+                <div className="h-2 bg-[#f0e6d8] rounded-full">
+                  <div className="h-2 bg-[#886c44] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </>
+    )
+  }
+
+  if (q.type === 'checkboxes') {
+    const opts = q.options || []
+    const counts = {}; opts.forEach(o => { counts[o] = 0 })
+    vals.forEach(arr => { if (Array.isArray(arr)) arr.forEach(a => { if (counts[a] !== undefined) counts[a]++ }) })
+    return (
+      <>
+        <p className="text-base font-bold text-[#2c2418] mb-4">{q.label}</p>
+        <div className="space-y-3">
+          {opts.map((opt, i) => {
+            const c = counts[opt] || 0
+            const pct = vals.length > 0 ? Math.round((c / vals.length) * 100) : 0
+            return (
+              <div key={i}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-bold text-[#2c2418]">{opt}</span>
+                  <span className="font-bold text-[#886c44]">{c} ({pct}%)</span>
+                </div>
+                <div className="h-2 bg-[#f0e6d8] rounded-full">
+                  <div className="h-2 bg-[#886c44] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </>
+    )
+  }
+
+  if (q.type === 'rating') {
+    const nums = vals.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 5)
+    const avg = nums.length ? (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1) : '—'
+    const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    nums.forEach(n => { dist[n] = (dist[n] || 0) + 1 })
+    return (
+      <>
+        <p className="text-base font-bold text-[#2c2418] mb-2">{q.label}</p>
+        <p className="text-4xl font-bold text-[#886c44] mb-5">{avg}<span className="text-base font-bold text-[#9e8b6f]"> / 5</span></p>
+        <div className="space-y-2">
+          {[5, 4, 3, 2, 1].map(star => {
+            const c = dist[star] || 0
+            const pct = nums.length ? Math.round((c / nums.length) * 100) : 0
+            return (
+              <div key={star} className="flex items-center gap-3">
+                <span className="text-sm font-bold text-[#2c2418] w-3">{star}</span>
+                <div className="flex-1 h-2 bg-[#f0e6d8] rounded-full">
+                  <div className="h-2 bg-[#886c44] rounded-full" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-sm font-bold text-[#886c44] w-6 text-right">{c}</span>
+              </div>
+            )
+          })}
+        </div>
+      </>
+    )
+  }
+
+  if (q.type === 'date') {
+    return (
+      <>
+        <p className="text-base font-bold text-[#2c2418] mb-3">{q.label}</p>
+        <div className="space-y-1">
+          {vals.map((v, i) => <p key={i} className="text-base font-bold text-[#886c44]">{v}</p>)}
+        </div>
+      </>
+    )
+  }
+
+  return null
+}
+
 function FormSummary({ form, responses }) {
   if (!responses.length) return null
   const total = responses.length
+  const groups = groupFieldsBySection(form.fields || [])
 
   return (
     <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] max-w-2xl">
       <h3 className="text-2xl font-normal text-[#2c2418] mb-1" style={SERIF}>Responses so far</h3>
       <p className="text-sm text-[#9e8b6f] font-bold mb-8">{total} response{total !== 1 ? 's' : ''} total</p>
 
-      {(form.fields || []).map(q => {
-        const vals = responses
-          .map(r => r.answers?.[q.id])
-          .filter(v => v !== undefined && v !== '' && v !== null && !(Array.isArray(v) && v.length === 0))
-        if (!vals.length) return null
-
-        if (q.type === 'short_text' || q.type === 'long_text') {
+      {groups.map((g, gi) => {
+        if (!g.section) {
+          const q = g.fields[0]
+          const content = renderQuestionSummary(q, responses)
+          if (!content) return null
           return (
             <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
-              <p className="text-base font-bold text-[#2c2418] mb-3">{q.label}</p>
-              <div className="space-y-2">
-                {vals.map((v, i) => <p key={i} className="text-base text-[#2c2418] p-3 bg-[#faf8f4] rounded-lg">{v}</p>)}
+              {content}
+            </div>
+          )
+        }
+        const blocks = g.fields.map(q => ({ q, content: renderQuestionSummary(q, responses) })).filter(b => b.content)
+        if (!blocks.length) return null
+        return (
+          <div key={gi} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
+            <p className="text-lg font-normal text-[#2c2418] mb-4" style={SERIF}>{g.section}</p>
+            <div className="space-y-6">
+              {blocks.map(({ q, content }) => <div key={q.id}>{content}</div>)}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Form: grouped question list (plain questions + per-person template sections) ──
+
+function FormFields({ form, answers, errors, onAnswer }) {
+  const groups = groupFieldsBySection(form.fields || [])
+  let counter = 0
+
+  return (
+    <div className="space-y-6">
+      {groups.map((g, gi) => {
+        if (!g.section) {
+          const q = g.fields[0]
+          counter++
+          return (
+            <div key={q.id} className={`bg-white p-7 rounded-xl border-2 transition ${errors[q.id] ? 'border-red-400' : 'border-[#e8e4dc]'}`}>
+              <p className="text-lg text-[#2c2418] font-bold mb-1">
+                {counter}. {q.label}
+                {q.required && <span className="text-red-500 ml-1">*</span>}
+              </p>
+              {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
+              <div className="mt-4">
+                <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q.id, v)} />
               </div>
             </div>
           )
         }
 
-        if (q.type === 'multiple_choice' || q.type === 'yes_no') {
-          const opts = q.type === 'yes_no' ? ['Yes', 'No'] : (q.options || [])
-          const counts = {}
-          opts.forEach(o => { counts[o] = 0 })
-          vals.forEach(v => { if (counts[v] !== undefined) counts[v]++ })
-          return (
-            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
-              <p className="text-base font-bold text-[#2c2418] mb-4">{q.label}</p>
-              <div className="space-y-3">
-                {opts.map((opt, i) => {
-                  const c = counts[opt] || 0
-                  const pct = vals.length > 0 ? Math.round((c / vals.length) * 100) : 0
-                  return (
-                    <div key={i}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-bold text-[#2c2418]">{opt}</span>
-                        <span className="font-bold text-[#886c44]">{c} ({pct}%)</span>
-                      </div>
-                      <div className="h-2 bg-[#f0e6d8] rounded-full">
-                        <div className="h-2 bg-[#886c44] rounded-full transition-all" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+        const email = g.fields[0]?.sectionEmail
+        return (
+          <div key={gi} className="bg-white p-7 rounded-xl border-2 border-[#e8e4dc]">
+            <p className="text-xl font-normal text-[#2c2418] mb-0.5" style={SERIF}>{g.section}</p>
+            {email && <p className="text-sm text-[#9e8b6f] font-bold mb-5">{email}</p>}
+            <div className="space-y-5">
+              {g.fields.map((q, qi) => (
+                <div key={q.id} className={`pt-5 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-lg' : ''}`}>
+                  <p className="text-base text-[#2c2418] font-bold mb-1">
+                    {q.label}
+                    {q.required && <span className="text-red-500 ml-1">*</span>}
+                  </p>
+                  {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
+                  <div className="mt-3">
+                    <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q.id, v)} />
+                  </div>
+                </div>
+              ))}
             </div>
-          )
-        }
-
-        if (q.type === 'checkboxes') {
-          const opts = q.options || []
-          const counts = {}; opts.forEach(o => { counts[o] = 0 })
-          vals.forEach(arr => { if (Array.isArray(arr)) arr.forEach(a => { if (counts[a] !== undefined) counts[a]++ }) })
-          return (
-            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
-              <p className="text-base font-bold text-[#2c2418] mb-4">{q.label}</p>
-              <div className="space-y-3">
-                {opts.map((opt, i) => {
-                  const c = counts[opt] || 0
-                  const pct = vals.length > 0 ? Math.round((c / vals.length) * 100) : 0
-                  return (
-                    <div key={i}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-bold text-[#2c2418]">{opt}</span>
-                        <span className="font-bold text-[#886c44]">{c} ({pct}%)</span>
-                      </div>
-                      <div className="h-2 bg-[#f0e6d8] rounded-full">
-                        <div className="h-2 bg-[#886c44] rounded-full transition-all" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        }
-
-        if (q.type === 'rating') {
-          const nums = vals.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 5)
-          const avg = nums.length ? (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1) : '—'
-          const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-          nums.forEach(n => { dist[n] = (dist[n] || 0) + 1 })
-          return (
-            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
-              <p className="text-base font-bold text-[#2c2418] mb-2">{q.label}</p>
-              <p className="text-4xl font-bold text-[#886c44] mb-5">{avg}<span className="text-base font-bold text-[#9e8b6f]"> / 5</span></p>
-              <div className="space-y-2">
-                {[5, 4, 3, 2, 1].map(star => {
-                  const c = dist[star] || 0
-                  const pct = nums.length ? Math.round((c / nums.length) * 100) : 0
-                  return (
-                    <div key={star} className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-[#2c2418] w-3">{star}</span>
-                      <div className="flex-1 h-2 bg-[#f0e6d8] rounded-full">
-                        <div className="h-2 bg-[#886c44] rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                      <span className="text-sm font-bold text-[#886c44] w-6 text-right">{c}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        }
-
-        if (q.type === 'date') {
-          return (
-            <div key={q.id} className="mb-8 pb-8 border-b border-[#e8e4dc] last:border-0 last:mb-0 last:pb-0">
-              <p className="text-base font-bold text-[#2c2418] mb-3">{q.label}</p>
-              <div className="space-y-1">
-                {vals.map((v, i) => <p key={i} className="text-base font-bold text-[#886c44]">{v}</p>)}
-              </div>
-            </div>
-          )
-        }
-
-        return null
+          </div>
+        )
       })}
     </div>
   )
@@ -276,25 +354,15 @@ function FormPage({ id }) {
           </>
         ) : (
           <div className="space-y-6">
-            {(form.fields || []).map((q, i) => (
-              <div key={q.id} className={`bg-white p-7 rounded-xl border-2 transition ${errors[q.id] ? 'border-red-400' : 'border-[#e8e4dc]'}`}>
-                <p className="text-lg text-[#2c2418] font-bold mb-1">
-                  {i + 1}. {q.label}
-                  {q.required && <span className="text-red-500 ml-1">*</span>}
-                </p>
-                {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
-                <div className="mt-4">
-                  <QuestionInput
-                    question={q}
-                    value={answers[q.id]}
-                    onChange={v => {
-                      setAnswers(a => ({ ...a, [q.id]: v }))
-                      setErrors(e => ({ ...e, [q.id]: false }))
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+            <FormFields
+              form={form}
+              answers={answers}
+              errors={errors}
+              onAnswer={(id, v) => {
+                setAnswers(a => ({ ...a, [id]: v }))
+                setErrors(e => ({ ...e, [id]: false }))
+              }}
+            />
             <button
               onClick={handleSubmit}
               disabled={submitting}
