@@ -811,6 +811,14 @@ function FormDetail({ id, onBack, templates }) {
   const [saving,    setSaving]    = useState(false)
   const [editMeta,  setEditMeta]  = useState({ title: '', description: '' })
   const [editFields, setEditFields] = useState([])
+  const [copiedHtml, setCopiedHtml] = useState(false)
+
+  const copyEmbedHtml = () => {
+    const src = `${window.location.origin}${window.location.pathname}?view=form&id=${id}`
+    const html = `<iframe src="${src}" style="width:100%;min-height:900px;border:none;" title="${(form?.title || 'Form').replace(/"/g, '&quot;')}"></iframe>`
+    navigator.clipboard.writeText(html)
+    setCopiedHtml(true); setTimeout(() => setCopiedHtml(false), 2000)
+  }
 
   useEffect(() => {
     async function load() {
@@ -889,10 +897,17 @@ function FormDetail({ id, onBack, templates }) {
                 {form.fields?.length ?? 0} question{(form.fields?.length ?? 0) !== 1 ? 's' : ''} · {responses.length} response{responses.length !== 1 ? 's' : ''}
               </p>
             </div>
-            <button onClick={() => setEditing(true)}
-              className="ml-6 mt-1 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition flex-shrink-0">
-              Edit
-            </button>
+            <div className="flex items-center gap-2 ml-6 mt-1 flex-shrink-0">
+              <button onClick={copyEmbedHtml}
+                className="flex items-center gap-1.5 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition">
+                {copiedHtml ? <Check size={15} /> : <Copy size={15} />}
+                {copiedHtml ? 'Copied!' : 'Copy Embed HTML'}
+              </button>
+              <button onClick={() => setEditing(true)}
+                className="px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition">
+                Edit
+              </button>
+            </div>
           </div>
         )}
 
