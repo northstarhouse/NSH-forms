@@ -811,6 +811,7 @@ function FormDetail({ id, onBack, templates }) {
   const [saving,    setSaving]    = useState(false)
   const [editMeta,  setEditMeta]  = useState({ title: '', description: '' })
   const [editFields, setEditFields] = useState([])
+  const [editShowResponses, setEditShowResponses] = useState(true)
   const [copiedHtml, setCopiedHtml] = useState(false)
 
   const copyEmbedHtml = () => {
@@ -827,6 +828,7 @@ function FormDetail({ id, onBack, templates }) {
       setForm(fo)
       setEditMeta({ title: fo.title, description: fo.description || '' })
       setEditFields(fo.fields || [])
+      setEditShowResponses(fo.show_responses !== false)
       const { data: res } = await supabase.from('nsh_form_responses').select('*').eq('form_id', id).order('created_at', { ascending: false })
       setResponses(res || [])
       setLoading(false)
@@ -837,11 +839,12 @@ function FormDetail({ id, onBack, templates }) {
   const handleSave = async () => {
     setSaving(true)
     const fields = normalizeFields(editFields)
-    const { error } = await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, fields }).eq('id', id)
+    const { error } = await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, fields, show_responses: editShowResponses }).eq('id', id)
     if (error) { alert('Save failed: ' + error.message); setSaving(false); return }
     const { data: fo } = await supabase.from('nsh_forms').select('*').eq('id', id).single()
     setForm(fo)
     setEditFields(fo.fields || [])
+    setEditShowResponses(fo.show_responses !== false)
     setSaving(false)
     setEditing(false)
   }
@@ -860,6 +863,10 @@ function FormDetail({ id, onBack, templates }) {
             <div className="space-y-4 mb-6">
               <input value={editMeta.title} onChange={e => setEditMeta({ ...editMeta, title: e.target.value })} placeholder="Form title" className={INPUT} style={SANS} />
               <textarea placeholder="Description (optional)" value={editMeta.description} onChange={e => setEditMeta({ ...editMeta, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
+              <label className="flex items-center gap-2 text-sm font-bold text-[#2c2418] cursor-pointer">
+                <input type="checkbox" checked={editShowResponses} onChange={e => setEditShowResponses(e.target.checked)} className="w-4 h-4" />
+                Show other people's answers after submitting
+              </label>
             </div>
             <RosterGenerator templates={templates || []} onGenerate={fields => setEditFields(prev => [...prev.filter(q => q.label.trim()), ...fields])} />
             <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
@@ -894,7 +901,7 @@ function FormDetail({ id, onBack, templates }) {
               <h2 className="text-4xl font-normal text-[#2c2418] mb-1" style={SERIF}>{form.title}</h2>
               {form.description && <p className="text-base text-[#2c2418] mt-1">{form.description}</p>}
               <p className="text-sm text-[#886c44] font-bold mt-2">
-                {form.fields?.length ?? 0} question{(form.fields?.length ?? 0) !== 1 ? 's' : ''} · {responses.length} response{responses.length !== 1 ? 's' : ''}
+                {form.fields?.length ?? 0} question{(form.fields?.length ?? 0) !== 1 ? 's' : ''} · {responses.length} response{responses.length !== 1 ? 's' : ''} · {form.show_responses !== false ? 'answers visible to respondents' : 'answers private'}
               </p>
             </div>
             <div className="flex items-center gap-2 ml-6 mt-1 flex-shrink-0">

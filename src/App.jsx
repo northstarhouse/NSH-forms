@@ -375,8 +375,10 @@ function FormPage({ id }) {
     setErrors({})
     setSubmitting(true)
     await supabase.from('nsh_form_responses').insert({ form_id: id, answers })
-    const { data: res } = await supabase.from('nsh_form_responses').select('answers').eq('form_id', id)
-    setResponses(res || [])
+    if (form.show_responses !== false) {
+      const { data: res } = await supabase.from('nsh_form_responses').select('answers').eq('form_id', id)
+      setResponses(res || [])
+    }
     setSubmitting(false)
     setSubmitted(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -387,7 +389,7 @@ function FormPage({ id }) {
 
   return (
     <div className="min-h-screen bg-[#f0e6d8]" style={SANS}>
-      <TopBar onBack={() => window.history.back()} />
+      <TopBar />
       <div className="max-w-3xl mx-auto px-6 py-14">
 
         <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">Form</p>
@@ -402,7 +404,7 @@ function FormPage({ id }) {
               <Check size={22} className="text-[#886c44] flex-shrink-0" />
               <p className="text-lg text-[#2c2418] font-bold">Your response has been recorded. Thank you!</p>
             </div>
-            <FormSummary form={form} responses={responses} />
+            {form.show_responses !== false && <FormSummary form={form} responses={responses} />}
           </>
         ) : (
           <div className="space-y-6">
@@ -714,7 +716,7 @@ function PollPage({ id }) {
 
   return (
     <div className="min-h-screen bg-[#f0e6d8]" style={SANS}>
-      <TopBar onBack={() => window.history.back()} />
+      <TopBar />
       <div className="max-w-3xl mx-auto px-6 py-14">
         <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">Poll</p>
         <h1 className="text-5xl font-normal mb-10 text-[#2c2418] leading-tight" style={SERIF}>{poll.question}</h1>
