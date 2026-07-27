@@ -5,6 +5,12 @@ import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySecti
 
 const AdminDashboard = lazy(() => import('./AdminDashboard.jsx'))
 
+// Fire-and-forget entry into Portal's shared activity feed (activity_log table).
+// Anon inserts are allowed there as long as auth_user_id is left null.
+function logActivity(description, action) {
+  supabase.from('activity_log').insert({ description, action }).then(() => {})
+}
+
 
 // ─── Form: Question input renderer ────────────────────────────────────────────
 
@@ -375,6 +381,7 @@ function FormPage({ id }) {
     setErrors({})
     setSubmitting(true)
     await supabase.from('nsh_form_responses').insert({ form_id: id, answers })
+    logActivity(`New submission on "${form.title}"`, 'form_submission')
     if (form.show_responses !== false) {
       const { data: res } = await supabase.from('nsh_form_responses').select('answers').eq('form_id', id)
       setResponses(res || [])
@@ -487,6 +494,7 @@ function EventPage({ id }) {
   const handleRSVP = async (response) => {
     if (!name.trim()) return
     await supabase.from('vol_event_responses').insert({ event_id: id, name: name.trim(), response })
+    logActivity(`New RSVP on "${event.title}": ${name.trim()} — ${response}`, 'event_rsvp')
     setSubmitted(true)
   }
 
@@ -497,6 +505,7 @@ function EventPage({ id }) {
     if (slot?.spots && current.length >= slot.spots) return
     const { error } = await supabase.from('vol_slot_signups').insert({ slot_id: slotId, name: slotName.trim() })
     if (!error) {
+      logActivity(`New shift signup on "${event.title}": ${slotName.trim()} signed up for ${slot?.time_label || 'a shift'}`, 'event_shift_signup')
       setSignedSlot(slotId)
       setExpandedSlot(null)
       setSlotName('')
@@ -704,6 +713,7 @@ function PollPage({ id }) {
   const handleVote = async (option) => {
     if (!name.trim()) return
     await supabase.from('vol_poll_votes').insert({ poll_id: id, name: name.trim(), option })
+    logActivity(`New vote on "${poll.question}": ${name.trim()} voted "${option}"`, 'poll_vote')
     setSubmitted(true)
   }
 
