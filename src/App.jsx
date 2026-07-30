@@ -449,6 +449,8 @@ function EventPage({ id }) {
   const [slots, setSlots]     = useState([])
   const [signups, setSignups] = useState({})
   const [name, setName]           = useState('')
+  const [rsvpChoice, setRsvpChoice] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [signedSlot, setSignedSlot]   = useState(null)
   const [expandedSlot, setExpandedSlot] = useState(null)
@@ -491,10 +493,12 @@ function EventPage({ id }) {
     return () => supabase.removeChannel(ch)
   }, [id, fetchData])
 
-  const handleRSVP = async (response) => {
-    if (!name.trim()) return
-    await supabase.from('vol_event_responses').insert({ event_id: id, name: name.trim(), response })
-    logActivity(`New RSVP on "${event.title}": ${name.trim()} — ${response}`, 'event_rsvp')
+  const handleRSVP = async () => {
+    if (!name.trim() || !rsvpChoice || submitting) return
+    setSubmitting(true)
+    await supabase.from('vol_event_responses').insert({ event_id: id, name: name.trim(), response: rsvpChoice })
+    logActivity(`New RSVP on "${event.title}": ${name.trim()} — ${rsvpChoice}`, 'event_rsvp')
+    setSubmitting(false)
     setSubmitted(true)
   }
 
@@ -588,13 +592,25 @@ function EventPage({ id }) {
                     className="w-full px-4 py-3 border border-[#ddd4c0] rounded-lg text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {(event.options?.length ? event.options : ['Attending', 'Attending +1', "Can't Make It"]).map(opt => (
-                    <button key={opt} onClick={() => handleRSVP(opt)} disabled={!name.trim()}
-                      className="flex-1 min-w-[120px] py-3 px-4 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
-                      {opt}
-                    </button>
-                  ))}
+                  {(event.options?.length ? event.options : ['Attending', 'Attending +1', "Can't Make It"]).map(opt => {
+                    const active = rsvpChoice === opt
+                    return (
+                      <button key={opt} type="button" onClick={() => setRsvpChoice(opt)} disabled={!name.trim()}
+                        className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg text-sm font-semibold transition disabled:opacity-40 border-2 ${
+                          active
+                            ? 'bg-[#886c44] border-[#886c44] text-white ring-2 ring-offset-2 ring-[#886c44]'
+                            : 'bg-white border-[#ddd4c0] text-[#2c2418] hover:border-[#886c44]'
+                        }`}>
+                        {active && <Check size={14} className="inline-block mr-1.5 -mt-0.5" />}
+                        {opt}
+                      </button>
+                    )
+                  })}
                 </div>
+                <button onClick={handleRSVP} disabled={!name.trim() || !rsvpChoice || submitting}
+                  className="w-full py-3 px-4 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
+                  {submitting ? 'Submitting…' : 'Submit RSVP'}
+                </button>
               </div>
             )}
 
