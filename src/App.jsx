@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Check, Calendar, MapPin } from 'lucide-react'
 import { supabase } from './supabase'
-import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySection, TopBar, GoldBar, Footer, LoadingScreen, NotFound } from './shared.jsx'
+import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySection, Footer, LoadingScreen, NotFound } from './shared.jsx'
 
 const AdminDashboard = lazy(() => import('./AdminDashboard.jsx'))
 
@@ -396,9 +396,9 @@ function FormPage({ id }) {
 
   return (
     <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
-      <TopBar />
-      <div className="max-w-3xl mx-auto px-6 py-14">
-        <div className="bg-[#fdfbf7] rounded-2xl p-8 sm:p-10">
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="h-3.5 bg-[#886c44] rounded-t-2xl" />
+        <div className="bg-[#fdfbf7] rounded-b-2xl p-8 sm:p-10">
 
           <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">Form</p>
           <h1 className="text-5xl font-normal mb-4 text-[#2c2418] leading-tight" style={SERIF}>{form.title}</h1>
@@ -532,11 +532,10 @@ function EventPage({ id }) {
   return (
     <div className="min-h-screen bg-[#d9cdb8]" style={FONT}>
 
-      <GoldBar />
-
       {/* ── Event body: one cream panel holding header + RSVP/shift card ── */}
-      <div className="max-w-4xl mx-auto px-6 py-10">
-       <div className="bg-[#fdfbf7] rounded-2xl p-8 sm:p-10">
+      <div className="max-w-4xl mx-auto px-6 py-8">
+       <div className="h-3.5 bg-[#886c44] rounded-t-2xl" />
+       <div className="bg-[#fdfbf7] rounded-b-2xl p-8 sm:p-10">
 
         {/* Event header */}
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#886c44] mb-5">
@@ -741,9 +740,9 @@ function PollPage({ id }) {
 
   return (
     <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
-      <TopBar />
-      <div className="max-w-3xl mx-auto px-6 py-14">
-        <div className="bg-[#fdfbf7] rounded-2xl p-8 sm:p-10">
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="h-3.5 bg-[#886c44] rounded-t-2xl" />
+        <div className="bg-[#fdfbf7] rounded-b-2xl p-8 sm:p-10">
         <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">Poll</p>
         <h1 className="text-5xl font-normal mb-10 text-[#2c2418] leading-tight" style={SERIF}>{poll.question}</h1>
 
