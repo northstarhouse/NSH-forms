@@ -1,6 +1,7 @@
-export const FONT    = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
-// Matches the headline font in buildBoardNotificationEmailHtml (the Portal's
-// branded notification emails) exactly, instead of the more calligraphic Cardo.
+// Both match buildBoardNotificationEmailHtml (the Portal's branded notification
+// emails) exactly: Helvetica/Arial for body copy, Georgia for headlines --
+// instead of Inter and Cardo, which are close but not the same typefaces.
+export const FONT    = { fontFamily: "Helvetica, Arial, sans-serif" }
 export const DISPLAY = { fontFamily: "Georgia, 'Times New Roman', serif" }
 export const SERIF   = DISPLAY
 export const SANS    = FONT
