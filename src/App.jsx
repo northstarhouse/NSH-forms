@@ -297,7 +297,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
           const q = g.fields[0]
           counter++
           return (
-            <div key={q.id} className={`bg-white p-7 rounded-xl transition ${errors[q.id] ? 'border-2 border-red-400' : ''}`}>
+            <div key={q.id} className={`bg-[#fdfbf7] p-7 rounded-xl transition ${errors[q.id] ? 'border-2 border-red-400' : ''}`}>
               <p className="text-lg text-[#2c2418] font-bold mb-1">
                 {counter}. {q.label}
                 {q.required && <span className="text-red-500 ml-1">*</span>}
@@ -312,7 +312,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
 
         const email = g.fields[0]?.sectionEmail
         return (
-          <div key={gi} className="bg-white p-7 rounded-xl">
+          <div key={gi} className="bg-[#fdfbf7] p-7 rounded-xl">
             <p className="text-xl font-normal text-[#2c2418] mb-0.5" style={SERIF}>{g.section}</p>
             {email && <p className="text-sm text-[#9e8b6f] font-bold mb-5">{email}</p>}
             <div className="space-y-5">
@@ -400,7 +400,6 @@ function FormPage({ id }) {
         <div className="h-3.5 bg-[#886c44] rounded-t-2xl" />
         <div className="bg-[#fdfbf7] rounded-b-2xl p-8 sm:p-10">
 
-          <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">Form</p>
           <h1 className="text-5xl font-normal mb-4 text-[#2c2418] leading-tight" style={SERIF}>{form.title}</h1>
           {form.description && (
             <p className="text-lg text-[#2c2418] mb-10 leading-relaxed max-w-2xl">{form.description}</p>
