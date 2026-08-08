@@ -47,7 +47,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <div className="space-y-2">
           {(q.options || []).map((opt, i) => (
             <button key={i} type="button" onClick={() => onChange(opt)}
-              className={`w-full max-w-lg p-4 text-left border-2 rounded-xl text-base font-bold transition ${value === opt ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44] bg-white text-[#2c2418] hover:border-[#886c44]'}`}
+              className={`w-full max-w-lg p-4 text-left border-2 rounded-sm text-base font-bold transition ${value === opt ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44] bg-white text-[#2c2418] hover:border-[#886c44]'}`}
               style={SANS}>{opt}</button>
           ))}
         </div>
@@ -62,9 +62,9 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
             return (
               <button key={i} type="button"
                 onClick={() => onChange(checked ? arr.filter(v => v !== opt) : [...arr, opt])}
-                className={`w-full max-w-lg p-4 text-left border-2 rounded-xl text-base font-bold transition flex items-center gap-3 ${checked ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44] bg-white text-[#2c2418] hover:border-[#886c44]'}`}
+                className={`w-full max-w-lg p-4 text-left border-2 rounded-sm text-base font-bold transition flex items-center gap-3 ${checked ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44] bg-white text-[#2c2418] hover:border-[#886c44]'}`}
                 style={SANS}>
-                <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#886c44]'}`}>
+                <div className={`w-5 h-5 rounded-none border-2 flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#886c44]'}`}>
                   {checked && <Check size={12} className="text-white" />}
                 </div>
                 {opt}
@@ -80,7 +80,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <div className="flex gap-3">
           {['Yes', 'No'].map(opt => (
             <button key={opt} type="button" onClick={() => onChange(opt)}
-              className={`px-8 py-4 rounded-xl text-base font-bold border-2 transition ${value === opt ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#886c44] text-[#2c2418] hover:border-[#886c44]'}`}
+              className={`px-8 py-4 rounded-sm text-base font-bold border-2 transition ${value === opt ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#886c44] text-[#2c2418] hover:border-[#886c44]'}`}
               style={SANS}>{opt}</button>
           ))}
         </div>
@@ -91,7 +91,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <div className="flex gap-2 flex-wrap">
           {[1, 2, 3, 4, 5].map(n => (
             <button key={n} type="button" onClick={() => onChange(String(n))}
-              className={`w-14 h-14 rounded-xl border-2 text-base font-bold transition ${String(n) === value ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#886c44] text-[#2c2418] hover:border-[#886c44]'}`}
+              className={`w-14 h-14 rounded-sm border-2 text-base font-bold transition ${String(n) === value ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#886c44] text-[#2c2418] hover:border-[#886c44]'}`}
               style={SANS}>{n}</button>
           ))}
           <span className="self-center text-sm font-bold text-[#9e8b6f] ml-1">1 = poor · 5 = excellent</span>
@@ -123,7 +123,7 @@ function renderQuestionSummary(q, responses, getVal) {
       <>
         <p className="text-base font-bold text-[#2c2418] mb-3">{q.label}</p>
         <div className="space-y-2">
-          {vals.map((v, i) => <p key={i} className="text-base text-[#2c2418] p-3 bg-[#faf8f4] rounded-lg">{v}</p>)}
+          {vals.map((v, i) => <p key={i} className="text-base text-[#2c2418] p-3 bg-[#faf8f4] rounded-sm">{v}</p>)}
         </div>
       </>
     )
@@ -254,7 +254,7 @@ function FormSummary({ form, responses }) {
   const groups = groupFieldsBySection(form.fields || [])
 
   return (
-    <div className="bg-white p-8 rounded-xl border border-[#886c44] max-w-2xl">
+    <div className="bg-white p-8 rounded-sm border border-[#886c44] max-w-2xl">
       <h3 className="text-2xl font-normal text-[#2c2418] mb-1" style={SERIF}>Responses so far</h3>
       <p className="text-sm text-[#9e8b6f] font-bold mb-8">{total} response{total !== 1 ? 's' : ''} total</p>
 
@@ -297,7 +297,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
           const q = g.fields[0]
           counter++
           return (
-            <div key={q.id} className={`bg-[#fdfbf7] p-7 rounded-xl transition ${errors[q.id] ? 'border-2 border-red-400' : ''}`}>
+            <div key={q.id} className={`bg-[#fdfbf7] p-7 rounded-sm transition ${errors[q.id] ? 'border-2 border-red-400' : ''}`}>
               <p className="text-lg text-[#2c2418] font-bold mb-1">
                 {counter}. {q.label}
                 {q.required && <span className="text-red-500 ml-1">*</span>}
@@ -312,12 +312,12 @@ function FormFields({ form, answers, errors, onAnswer }) {
 
         const email = g.fields[0]?.sectionEmail
         return (
-          <div key={gi} className="bg-[#fdfbf7] p-7 rounded-xl">
+          <div key={gi} className="bg-[#fdfbf7] p-7 rounded-sm">
             <p className="text-xl font-normal text-[#2c2418] mb-0.5" style={SERIF}>{g.section}</p>
             {email && <p className="text-sm text-[#9e8b6f] font-bold mb-5">{email}</p>}
             <div className="space-y-5">
               {g.fields.map((q, qi) => (
-                <div key={q.id} className={`pt-5 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-lg' : ''}`}>
+                <div key={q.id} className={`pt-5 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-sm' : ''}`}>
                   <p className="text-base text-[#2c2418] font-bold mb-1">
                     {q.label}
                     {q.required && <span className="text-red-500 ml-1">*</span>}
@@ -397,8 +397,8 @@ function FormPage({ id }) {
   return (
     <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="h-3.5 bg-[#886c44] rounded-t-2xl" />
-        <div className="bg-[#fdfbf7] rounded-b-2xl p-8 sm:p-10">
+        <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
+        <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
 
           <h1 className="text-[30px] font-normal mb-6 text-[#2a2420] leading-tight text-center" style={SERIF}>{form.title}</h1>
           <div className="border-t border-[#e5ddcf] w-3/5 mx-auto mb-6" />
@@ -408,7 +408,7 @@ function FormPage({ id }) {
 
           {submitted ? (
             <>
-              <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-white rounded-xl border border-[#886c44]">
+              <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-white rounded-sm border border-[#886c44]">
                 <Check size={22} className="text-[#886c44] flex-shrink-0" />
                 <p className="text-lg text-[#2c2418] font-bold">Your response has been recorded. Thank you!</p>
               </div>
@@ -432,7 +432,7 @@ function FormPage({ id }) {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="px-8 py-4 bg-[#886c44] text-white rounded-xl text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+                className="px-8 py-4 bg-[#886c44] text-white rounded-sm text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
                 {submitting ? 'Submitting…' : 'Submit'}
               </button>
             </div>
@@ -534,8 +534,8 @@ function EventPage({ id }) {
 
       {/* ── Event body: one cream panel holding header + RSVP/shift card ── */}
       <div className="max-w-4xl mx-auto px-6 py-8">
-       <div className="h-3.5 bg-[#886c44] rounded-t-2xl" />
-       <div className="bg-[#fdfbf7] rounded-b-2xl p-8 sm:p-10">
+       <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
+       <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
 
         {/* Event header */}
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#886c44] mb-5">
@@ -567,7 +567,7 @@ function EventPage({ id }) {
 
         {/* RSVP */}
         {!isShift && (
-          <div className="bg-white rounded-2xl border border-[#886c44] px-8 py-8">
+          <div className="bg-white rounded-sm border border-[#886c44] px-8 py-8">
             <div className="flex items-baseline justify-between mb-3">
               <h2 className="text-2xl font-bold text-[#1e1a14]" style={DISPLAY}>RSVP</h2>
               <p className="text-sm text-[#a08060] hidden sm:block">Let us know if you can make it</p>
@@ -575,7 +575,7 @@ function EventPage({ id }) {
             <div className="border-t border-[#e0d5c0] mb-8" />
 
             {submitted ? (
-              <div className="flex items-center gap-3 py-5 px-6 bg-[#fdfbf7] rounded-xl">
+              <div className="flex items-center gap-3 py-5 px-6 bg-[#fdfbf7] rounded-sm">
                 <Check size={18} className="text-[#886c44] flex-shrink-0" />
                 <p className="text-base font-semibold text-[#2c2418]">Thanks, {name}! Your RSVP was recorded.</p>
               </div>
@@ -585,14 +585,14 @@ function EventPage({ id }) {
                   <label className="block text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-2">Your Name</label>
                   <input type="text" value={name} onChange={e => setName(e.target.value)}
                     placeholder="Full name" autoFocus
-                    className="w-full px-4 py-3 border border-[#ddd4c0] rounded-lg text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
+                    className="w-full px-4 py-3 border border-[#ddd4c0] rounded-sm text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {(event.options?.length ? event.options : ['Attending', 'Attending +1', "Can't Make It"]).map(opt => {
                     const active = rsvpChoice === opt
                     return (
                       <button key={opt} type="button" onClick={() => setRsvpChoice(opt)} disabled={!name.trim()}
-                        className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg text-sm font-semibold transition disabled:opacity-40 border-2 ${
+                        className={`flex-1 min-w-[120px] py-3 px-4 rounded-sm text-sm font-semibold transition disabled:opacity-40 border-2 ${
                           active
                             ? 'bg-[#886c44] border-[#886c44] text-white ring-2 ring-offset-2 ring-[#886c44]'
                             : 'bg-white border-[#ddd4c0] text-[#2c2418] hover:border-[#886c44]'
@@ -604,7 +604,7 @@ function EventPage({ id }) {
                   })}
                 </div>
                 <button onClick={handleRSVP} disabled={!name.trim() || !rsvpChoice || submitting}
-                  className="w-full py-3 px-4 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
+                  className="w-full py-3 px-4 bg-[#886c44] text-white rounded-sm text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
                   {submitting ? 'Submitting…' : 'Submit RSVP'}
                 </button>
               </div>
@@ -615,7 +615,7 @@ function EventPage({ id }) {
 
         {/* Shift slots */}
         {isShift && (
-          <div className="bg-white rounded-2xl border border-[#886c44] px-8 py-8">
+          <div className="bg-white rounded-sm border border-[#886c44] px-8 py-8">
             {slots.length === 0 && (
               <p className="text-sm text-[#a08060]">No time slots added yet.</p>
             )}
@@ -664,7 +664,7 @@ function EventPage({ id }) {
                             className="text-sm font-medium text-[#a08060] hover:text-[#5a4a35] transition">Cancel</button>
                         ) : (
                           <button onClick={() => { setExpandedSlot(slot.id); setSlotName('') }}
-                            className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition whitespace-nowrap">
+                            className="px-5 py-2.5 bg-[#886c44] text-white rounded-sm text-sm font-semibold hover:bg-[#6d5436] transition whitespace-nowrap">
                             Sign Up
                           </button>
                         )}
@@ -676,9 +676,9 @@ function EventPage({ id }) {
                         <input type="text" value={slotName} onChange={e => setSlotName(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleShiftSignup(slot.id)}
                           placeholder="Your full name" autoFocus
-                          className="flex-1 px-4 py-2.5 border border-[#ddd4c0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#886c44]" />
+                          className="flex-1 px-4 py-2.5 border border-[#ddd4c0] rounded-sm text-sm bg-white focus:outline-none focus:border-[#886c44]" />
                         <button onClick={() => handleShiftSignup(slot.id)} disabled={!slotName.trim()}
-                          className="px-5 py-2.5 bg-[#886c44] text-white rounded-lg text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
+                          className="px-5 py-2.5 bg-[#886c44] text-white rounded-sm text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
                           Confirm
                         </button>
                       </div>
@@ -741,13 +741,13 @@ function PollPage({ id }) {
   return (
     <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="h-3.5 bg-[#886c44] rounded-t-2xl" />
-        <div className="bg-[#fdfbf7] rounded-b-2xl p-8 sm:p-10">
+        <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
+        <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
         <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">Poll</p>
         <h1 className="text-5xl font-normal mb-10 text-[#2c2418] leading-tight" style={SERIF}>{poll.question}</h1>
 
         {submitted ? (
-          <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-white rounded-xl border border-[#886c44]">
+          <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-white rounded-sm border border-[#886c44]">
             <Check size={22} className="text-[#886c44] flex-shrink-0" />
             <p className="text-lg text-[#2c2418] font-bold">Thanks, {name}! Your vote has been recorded.</p>
           </div>
@@ -758,7 +758,7 @@ function PollPage({ id }) {
             <div className="space-y-3 pt-1">
               {poll.options.map((option, idx) => (
                 <button key={idx} onClick={() => handleVote(option)} disabled={!name.trim()}
-                  className="w-full max-w-lg p-5 text-left bg-white border-2 border-[#886c44] rounded-xl hover:border-[#886c44] hover:bg-[#f5f0e8] text-[#2c2418] text-base font-bold transition disabled:opacity-40"
+                  className="w-full max-w-lg p-5 text-left bg-white border-2 border-[#886c44] rounded-sm hover:border-[#886c44] hover:bg-[#f5f0e8] text-[#2c2418] text-base font-bold transition disabled:opacity-40"
                   style={SANS}>
                   <div className="flex justify-between items-center">
                     <span>{option}</span>
@@ -771,7 +771,7 @@ function PollPage({ id }) {
         )}
 
         {votes.length > 0 && (
-          <div className="bg-white p-8 rounded-xl border border-[#886c44] max-w-lg">
+          <div className="bg-white p-8 rounded-sm border border-[#886c44] max-w-lg">
             <h3 className="text-2xl font-normal text-[#2c2418] mb-1" style={SERIF}>Results</h3>
             <p className="text-sm text-[#9e8b6f] font-bold mb-6">{total} vote{total !== 1 ? 's' : ''} total</p>
             <div className="space-y-4 mb-8">
