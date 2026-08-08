@@ -133,29 +133,6 @@ export function TopBar({ onBack }) {
   )
 }
 
-// Matches the 3-link footer at the bottom of every branded Portal notification
-// email (Portal / Volunteer Hub / Website) so a form reached from that email
-// feels like a continuation of it, not a different site.
-export function Footer() {
-  const links = [
-    { label: 'Portal', url: 'https://northstarhouse.github.io/Portal/' },
-    { label: 'Volunteer Hub', url: 'https://northstarhouse.github.io/volunteerhub/' },
-    { label: 'Website', url: 'https://thenorthstarhouse.org' },
-  ]
-  return (
-    <div className="border-t border-[#e0d5c0] mt-16">
-      <div className="max-w-4xl mx-auto flex divide-x divide-[#e0d5c0]">
-        {links.map(l => (
-          <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer"
-            className="flex-1 text-center py-4 text-sm font-bold text-[#886c44] hover:text-[#6d5436] transition" style={SANS}>
-            {l.label}
-          </a>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export function LoadingScreen() {
   return (
     <div className="min-h-screen bg-[#faf8f4] flex items-center justify-center">

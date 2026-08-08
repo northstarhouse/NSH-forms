@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Check, Calendar, MapPin } from 'lucide-react'
 import { supabase } from './supabase'
-import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySection, Footer, LoadingScreen, NotFound } from './shared.jsx'
+import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySection, LoadingScreen, NotFound } from './shared.jsx'
 
 const AdminDashboard = lazy(() => import('./AdminDashboard.jsx'))
 
@@ -447,7 +447,6 @@ function FormPage({ id }) {
           )}
         </div>
       </div>
-      <Footer />
     </div>
   )
 }
@@ -701,7 +700,6 @@ function EventPage({ id }) {
         )}
        </div>
       </div>
-      <Footer />
     </div>
   )
 }
@@ -811,7 +809,6 @@ function PollPage({ id }) {
         )}
         </div>
       </div>
-      <Footer />
     </div>
   )
 }
