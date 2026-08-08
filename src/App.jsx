@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Check, Calendar, MapPin } from 'lucide-react'
 import { supabase } from './supabase'
-import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySection, TopBar, LoadingScreen, NotFound } from './shared.jsx'
+import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySection, TopBar, GoldBar, Footer, LoadingScreen, NotFound } from './shared.jsx'
 
 const AdminDashboard = lazy(() => import('./AdminDashboard.jsx'))
 
@@ -437,6 +437,7 @@ function FormPage({ id }) {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }
@@ -530,6 +531,7 @@ function EventPage({ id }) {
     <div className="min-h-screen bg-[#f5f0e7]" style={FONT}>
 
       {/* ── Top bar with logo ── */}
+      <GoldBar />
       <div className="bg-[#f5f0e7] border-b border-[#e0d5c0]">
         <div className="max-w-4xl mx-auto px-6 py-3 flex justify-end">
           <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-24 w-auto" />
@@ -696,6 +698,7 @@ function EventPage({ id }) {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }
@@ -803,6 +806,7 @@ function PollPage({ id }) {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

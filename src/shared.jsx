@@ -104,18 +104,51 @@ export function normalizeFields(fields) {
 
 import { ArrowLeft } from 'lucide-react'
 
+// Matches the gold band at the top of every branded Portal notification email
+// (buildBoardNotificationEmailHtml) — the same visual anchor whether someone's
+// looking at the email or clicking through to the form it links to.
+export function GoldBar() {
+  return <div className="h-3.5 bg-[#886c44]" />
+}
+
 export function TopBar({ onBack }) {
   return (
-    <div className="bg-[#f5f0e7] border-b border-[#e0d5c0] sticky top-0 z-10">
-      <div className="max-w-4xl mx-auto px-6 py-3 flex justify-between items-center">
-        {onBack ? (
-          <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm hover:text-[#6d5436] transition" style={SANS}>
-            <ArrowLeft size={16} /> Dashboard
-          </button>
-        ) : (
-          <div />
-        )}
-        <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-16 w-auto" />
+    <div className="sticky top-0 z-10">
+      <GoldBar />
+      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0]">
+        <div className="max-w-4xl mx-auto px-6 py-3 flex justify-between items-center">
+          {onBack ? (
+            <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm hover:text-[#6d5436] transition" style={SANS}>
+              <ArrowLeft size={16} /> Dashboard
+            </button>
+          ) : (
+            <div />
+          )}
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-16 w-auto" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Matches the 3-link footer at the bottom of every branded Portal notification
+// email (Portal / Volunteer Hub / Website) so a form reached from that email
+// feels like a continuation of it, not a different site.
+export function Footer() {
+  const links = [
+    { label: 'Portal', url: 'https://northstarhouse.github.io/Portal/' },
+    { label: 'Volunteer Hub', url: 'https://northstarhouse.github.io/volunteerhub/' },
+    { label: 'Website', url: 'https://thenorthstarhouse.org' },
+  ]
+  return (
+    <div className="border-t border-[#e0d5c0] mt-16">
+      <div className="max-w-4xl mx-auto flex divide-x divide-[#e0d5c0]">
+        {links.map(l => (
+          <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer"
+            className="flex-1 text-center py-4 text-sm font-bold text-[#886c44] hover:text-[#6d5436] transition" style={SANS}>
+            {l.label}
+          </a>
+        ))}
       </div>
     </div>
   )
