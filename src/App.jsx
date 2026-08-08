@@ -55,7 +55,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <div className="space-y-2">
           {(q.options || []).map((opt, i) => (
             <button key={i} type="button" onClick={() => onChange(opt)}
-              className={`w-full max-w-lg p-4 text-left border-2 rounded-sm text-base font-bold transition ${value === opt ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44] bg-white text-[#2c2418] hover:border-[#886c44]'}`}
+              className={`w-full max-w-lg p-4 text-left border-2 rounded-sm text-base font-bold transition ${value === opt ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44]/30 bg-white text-[#2c2418] hover:border-[#886c44]'}`}
               style={SANS}>{opt}</button>
           ))}
         </div>
@@ -70,9 +70,9 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
             return (
               <button key={i} type="button"
                 onClick={() => onChange(checked ? arr.filter(v => v !== opt) : [...arr, opt])}
-                className={`w-full max-w-lg p-4 text-left border-2 rounded-sm text-base font-bold transition flex items-center gap-3 ${checked ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44] bg-white text-[#2c2418] hover:border-[#886c44]'}`}
+                className={`w-full max-w-lg p-4 text-left border-2 rounded-sm text-base font-bold transition flex items-center gap-3 ${checked ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44]/30 bg-white text-[#2c2418] hover:border-[#886c44]'}`}
                 style={SANS}>
-                <div className={`w-5 h-5 rounded-none border-2 flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#886c44]'}`}>
+                <div className={`w-5 h-5 rounded-none border-2 flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#886c44]/30'}`}>
                   {checked && <Check size={12} className="text-white" />}
                 </div>
                 {opt}
@@ -88,7 +88,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <div className="flex gap-3">
           {['Yes', 'No'].map(opt => (
             <button key={opt} type="button" onClick={() => onChange(opt)}
-              className={`px-8 py-4 rounded-sm text-base font-bold border-2 transition ${value === opt ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#886c44] text-[#2c2418] hover:border-[#886c44]'}`}
+              className={`px-8 py-4 rounded-sm text-base font-bold border-2 transition ${value === opt ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#886c44]/30 text-[#2c2418] hover:border-[#886c44]'}`}
               style={SANS}>{opt}</button>
           ))}
         </div>
@@ -99,7 +99,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <div className="flex gap-2 flex-wrap">
           {[1, 2, 3, 4, 5].map(n => (
             <button key={n} type="button" onClick={() => onChange(String(n))}
-              className={`w-14 h-14 rounded-sm border-2 text-base font-bold transition ${String(n) === value ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#886c44] text-[#2c2418] hover:border-[#886c44]'}`}
+              className={`w-14 h-14 rounded-sm border-2 text-base font-bold transition ${String(n) === value ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#886c44]/30 text-[#2c2418] hover:border-[#886c44]'}`}
               style={SANS}>{n}</button>
           ))}
           <span className="self-center text-sm font-bold text-[#9e8b6f] ml-1">1 = poor · 5 = excellent</span>
