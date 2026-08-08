@@ -10,6 +10,7 @@ export const INPUT = "w-full p-3 border-2 border-[#886c44]/30 rounded-sm text-ba
 export const QUESTION_TYPES = [
   { value: 'short_text',      label: 'Short answer' },
   { value: 'long_text',       label: 'Paragraph' },
+  { value: 'single_choice',   label: 'Single Choice' },
   { value: 'multiple_choice', label: 'Multiple choice' },
   { value: 'checkboxes',      label: 'Checkboxes' },
   { value: 'yes_no',          label: 'Yes / No' },
@@ -94,12 +95,12 @@ export function normalizeFields(fields) {
           .filter(p => p.label.trim())
           .map(({ id, type, label, required, options, as_dropdown }) => ({
             id, type, label: label.trim(), required: !!required,
-            ...(['multiple_choice', 'checkboxes'].includes(type) && { options: (options || []).filter(o => o.trim()) }),
-            ...(type === 'multiple_choice' && as_dropdown && { as_dropdown: true })
+            ...(['single_choice', 'multiple_choice', 'checkboxes'].includes(type) && { options: (options || []).filter(o => o.trim()) }),
+            ...(['single_choice', 'multiple_choice'].includes(type) && as_dropdown && { as_dropdown: true })
           }))
-      } else if (['multiple_choice', 'checkboxes'].includes(type)) {
+      } else if (['single_choice', 'multiple_choice', 'checkboxes'].includes(type)) {
         base.options = (options || []).filter(o => o.trim())
-        if (type === 'multiple_choice' && as_dropdown) base.as_dropdown = true
+        if (['single_choice', 'multiple_choice'].includes(type) && as_dropdown) base.as_dropdown = true
       }
       return base
     })

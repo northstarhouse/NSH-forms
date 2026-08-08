@@ -48,7 +48,7 @@ function SlotCard({ slot, index, total, onChange, onRemove }) {
 // ─── Admin: one part of a grouped ("Add on") question ──────────────────────────
 
 function PartEditor({ part, index, onUpdate, onRemove, canRemove }) {
-  const hasOptions = ['multiple_choice', 'checkboxes'].includes(part.type)
+  const hasOptions = ['single_choice', 'multiple_choice', 'checkboxes'].includes(part.type)
   return (
     <div className="space-y-2">
       <div className="flex gap-2 items-center flex-wrap">
@@ -100,7 +100,7 @@ function PartEditor({ part, index, onUpdate, onRemove, canRemove }) {
         </div>
       )}
 
-      {part.type === 'multiple_choice' && (
+      {(part.type === 'single_choice' || part.type === 'multiple_choice') && (
         <label className="flex items-center gap-2 cursor-pointer select-none ml-1">
           <input
             type="checkbox"
@@ -128,7 +128,7 @@ function PartEditor({ part, index, onUpdate, onRemove, canRemove }) {
 // ─── Admin: Question editor row ────────────────────────────────────────────────
 
 function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove, onDuplicate, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) {
-  const hasOptions = ['multiple_choice', 'checkboxes'].includes(q.type)
+  const hasOptions = ['single_choice', 'multiple_choice', 'checkboxes'].includes(q.type)
 
   const moveControls = (
     <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
@@ -251,7 +251,7 @@ function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove, onD
             </div>
           )}
 
-          {q.type === 'multiple_choice' && (
+          {(q.type === 'single_choice' || q.type === 'multiple_choice') && (
             <label className="flex items-center gap-2 cursor-pointer select-none ml-1">
               <input
                 type="checkbox"
