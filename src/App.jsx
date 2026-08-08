@@ -254,7 +254,7 @@ function FormSummary({ form, responses }) {
   const groups = groupFieldsBySection(form.fields || [])
 
   return (
-    <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] max-w-2xl">
+    <div className="bg-[#fdfbf7] p-8 rounded-xl border border-[#886c44]/35 max-w-2xl">
       <h3 className="text-2xl font-normal text-[#2c2418] mb-1" style={SERIF}>Responses so far</h3>
       <p className="text-sm text-[#9e8b6f] font-bold mb-8">{total} response{total !== 1 ? 's' : ''} total</p>
 
@@ -297,7 +297,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
           const q = g.fields[0]
           counter++
           return (
-            <div key={q.id} className={`bg-white p-7 rounded-xl border-2 transition ${errors[q.id] ? 'border-red-400' : 'border-[#e8e4dc]'}`}>
+            <div key={q.id} className={`bg-[#fdfbf7] p-7 rounded-xl border transition ${errors[q.id] ? 'border-2 border-red-400' : 'border-[#886c44]/35'}`}>
               <p className="text-lg text-[#2c2418] font-bold mb-1">
                 {counter}. {q.label}
                 {q.required && <span className="text-red-500 ml-1">*</span>}
@@ -312,7 +312,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
 
         const email = g.fields[0]?.sectionEmail
         return (
-          <div key={gi} className="bg-white p-7 rounded-xl border-2 border-[#e8e4dc]">
+          <div key={gi} className="bg-[#fdfbf7] p-7 rounded-xl border border-[#886c44]/35">
             <p className="text-xl font-normal text-[#2c2418] mb-0.5" style={SERIF}>{g.section}</p>
             {email && <p className="text-sm text-[#9e8b6f] font-bold mb-5">{email}</p>}
             <div className="space-y-5">
@@ -395,7 +395,7 @@ function FormPage({ id }) {
   if (!form)   return <NotFound />
 
   return (
-    <div className="min-h-screen bg-[#f0e6d8]" style={SANS}>
+    <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
       <TopBar />
       <div className="max-w-3xl mx-auto px-6 py-14">
 
@@ -407,7 +407,7 @@ function FormPage({ id }) {
 
         {submitted ? (
           <>
-            <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-white rounded-xl border-2 border-[#886c44]">
+            <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-[#fdfbf7] rounded-xl border-2 border-[#886c44]">
               <Check size={22} className="text-[#886c44] flex-shrink-0" />
               <p className="text-lg text-[#2c2418] font-bold">Your response has been recorded. Thank you!</p>
             </div>
@@ -528,11 +528,11 @@ function EventPage({ id }) {
   const timeStr = fmtTime(event.time)
 
   return (
-    <div className="min-h-screen bg-[#f5f0e7]" style={FONT}>
+    <div className="min-h-screen bg-[#d9cdb8]" style={FONT}>
 
       {/* ── Top bar with logo ── */}
       <GoldBar />
-      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0]">
+      <div className="bg-[#fdfbf7] border-b border-[#e0d5c0]">
         <div className="max-w-4xl mx-auto px-6 py-3 flex justify-end">
           <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-24 w-auto" />
         </div>
@@ -573,7 +573,7 @@ function EventPage({ id }) {
 
         {/* RSVP */}
         {!isShift && (
-          <div className="bg-white rounded-2xl px-8 py-8">
+          <div className="bg-[#fdfbf7] rounded-2xl border border-[#886c44]/35 px-8 py-8">
             <div className="flex items-baseline justify-between mb-3">
               <h2 className="text-2xl font-bold text-[#1e1a14]" style={DISPLAY}>RSVP</h2>
               <p className="text-sm text-[#a08060] hidden sm:block">Let us know if you can make it</p>
@@ -581,7 +581,7 @@ function EventPage({ id }) {
             <div className="border-t border-[#e0d5c0] mb-8" />
 
             {submitted ? (
-              <div className="flex items-center gap-3 py-5 px-6 bg-[#f5f0e7] rounded-xl">
+              <div className="flex items-center gap-3 py-5 px-6 bg-[#fdfbf7] rounded-xl">
                 <Check size={18} className="text-[#886c44] flex-shrink-0" />
                 <p className="text-base font-semibold text-[#2c2418]">Thanks, {name}! Your RSVP was recorded.</p>
               </div>
@@ -621,7 +621,7 @@ function EventPage({ id }) {
 
         {/* Shift slots */}
         {isShift && (
-          <div className="bg-white rounded-2xl px-8 py-8">
+          <div className="bg-[#fdfbf7] rounded-2xl border border-[#886c44]/35 px-8 py-8">
             {slots.length === 0 && (
               <p className="text-sm text-[#a08060]">No time slots added yet.</p>
             )}
@@ -744,7 +744,7 @@ function PollPage({ id }) {
   const total = votes.length
 
   return (
-    <div className="min-h-screen bg-[#f0e6d8]" style={SANS}>
+    <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
       <TopBar />
       <div className="max-w-3xl mx-auto px-6 py-14">
         <p className="text-sm uppercase tracking-widest text-[#886c44] font-bold mb-3">Poll</p>
@@ -775,7 +775,7 @@ function PollPage({ id }) {
         )}
 
         {votes.length > 0 && (
-          <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] max-w-lg">
+          <div className="bg-[#fdfbf7] p-8 rounded-xl border border-[#886c44]/35 max-w-lg">
             <h3 className="text-2xl font-normal text-[#2c2418] mb-1" style={SERIF}>Results</h3>
             <p className="text-sm text-[#9e8b6f] font-bold mb-6">{total} vote{total !== 1 ? 's' : ''} total</p>
             <div className="space-y-4 mb-8">

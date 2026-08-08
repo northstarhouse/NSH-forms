@@ -1,5 +1,7 @@
 export const FONT    = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
-export const DISPLAY = { fontFamily: "'Cardo', Georgia, serif" }
+// Matches the headline font in buildBoardNotificationEmailHtml (the Portal's
+// branded notification emails) exactly, instead of the more calligraphic Cardo.
+export const DISPLAY = { fontFamily: "Georgia, 'Times New Roman', serif" }
 export const SERIF   = DISPLAY
 export const SANS    = FONT
 export const INPUT = "w-full p-3 border-2 border-[#d9cec2] rounded-lg text-base font-normal focus:outline-none focus:border-[#886c44] bg-white"
@@ -115,7 +117,7 @@ export function TopBar({ onBack }) {
   return (
     <div className="sticky top-0 z-10">
       <GoldBar />
-      <div className="bg-[#f5f0e7] border-b border-[#e0d5c0]">
+      <div className="bg-[#fdfbf7] border-b border-[#e0d5c0]">
         <div className="max-w-4xl mx-auto px-6 py-3 flex justify-between items-center">
           {onBack ? (
             <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm hover:text-[#6d5436] transition" style={SANS}>
