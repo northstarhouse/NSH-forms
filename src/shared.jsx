@@ -4,7 +4,7 @@ export const FONT    = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont
 export const DISPLAY = { fontFamily: "Georgia, 'Times New Roman', serif" }
 export const SERIF   = DISPLAY
 export const SANS    = FONT
-export const INPUT = "w-full p-3 border-2 border-[#d9cec2] rounded-lg text-base font-normal focus:outline-none focus:border-[#886c44] bg-white"
+export const INPUT = "w-full p-3 border-2 border-[#886c44] rounded-lg text-base font-normal focus:outline-none focus:border-[#6d5436] bg-white"
 
 export const QUESTION_TYPES = [
   { value: 'short_text',      label: 'Short answer' },
