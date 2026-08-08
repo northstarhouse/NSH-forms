@@ -100,6 +100,18 @@ function PartEditor({ part, index, onUpdate, onRemove, canRemove }) {
         </div>
       )}
 
+      {part.type === 'multiple_choice' && (
+        <label className="flex items-center gap-2 cursor-pointer select-none ml-1">
+          <input
+            type="checkbox"
+            checked={!!part.as_dropdown}
+            onChange={e => onUpdate({ ...part, as_dropdown: e.target.checked })}
+            className="w-4 h-4 accent-[#886c44]"
+          />
+          <span className="text-sm font-bold text-[#9e8b6f]">Show as a dropdown instead of buttons</span>
+        </label>
+      )}
+
       <label className="flex items-center gap-2 cursor-pointer select-none">
         <input
           type="checkbox"
@@ -237,6 +249,18 @@ function QuestionEditor({ question: q, index, onUpdate, onRemove, canRemove, onD
                 <Plus size={14} /> Add option
               </button>
             </div>
+          )}
+
+          {q.type === 'multiple_choice' && (
+            <label className="flex items-center gap-2 cursor-pointer select-none ml-1">
+              <input
+                type="checkbox"
+                checked={!!q.as_dropdown}
+                onChange={e => onUpdate({ ...q, as_dropdown: e.target.checked })}
+                className="w-4 h-4 accent-[#886c44]"
+              />
+              <span className="text-sm font-bold text-[#9e8b6f]">Show as a dropdown instead of buttons</span>
+            </label>
           )}
 
           <div className="flex items-center gap-5 flex-wrap">

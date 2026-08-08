@@ -43,6 +43,14 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
       return <textarea value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Your answer" className={INPUT} rows={4} style={SANS} />
 
     case 'multiple_choice':
+      if (q.as_dropdown) {
+        return (
+          <select value={value || ''} onChange={e => onChange(e.target.value)} className={INPUT} style={SANS}>
+            <option value="" disabled>Choose an option…</option>
+            {(q.options || []).map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+          </select>
+        )
+      }
       return (
         <div className="space-y-2">
           {(q.options || []).map((opt, i) => (
