@@ -400,9 +400,10 @@ function FormPage({ id }) {
         <div className="h-3.5 bg-[#886c44] rounded-t-2xl" />
         <div className="bg-[#fdfbf7] rounded-b-2xl p-8 sm:p-10">
 
-          <h1 className="text-5xl font-normal mb-4 text-[#2c2418] leading-tight" style={SERIF}>{form.title}</h1>
+          <h1 className="text-[30px] font-normal mb-6 text-[#2a2420] leading-tight text-center" style={SERIF}>{form.title}</h1>
+          <div className="border-t border-[#e5ddcf] w-3/5 mx-auto mb-6" />
           {form.description && (
-            <p className="text-lg text-[#2c2418] mb-10 leading-relaxed max-w-2xl">{form.description}</p>
+            <p className="text-[15px] text-[#555] mb-10 leading-relaxed text-center" style={SANS}>{form.description}</p>
           )}
 
           {submitted ? (
