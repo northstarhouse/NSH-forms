@@ -21,7 +21,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <div className="space-y-5">
           {(q.parts || []).map(part => (
             <div key={part.id}>
-              <p className="text-sm text-[#2c2418] font-bold mb-1">
+              <p className="text-sm text-[#3f3f3f] font-bold mb-1">
                 {part.label}
                 {part.required && <span className="text-red-500 ml-1">*</span>}
               </p>
@@ -306,7 +306,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
           counter++
           return (
             <div key={q.id} className={`bg-[#fdfbf7] p-7 rounded-sm transition ${errors[q.id] ? 'border-2 border-red-400' : ''}`}>
-              <p className="text-lg text-[#2c2418] font-bold mb-1">
+              <p className="text-lg text-[#3f3f3f] font-bold mb-1">
                 {counter}. {q.label}
                 {q.required && <span className="text-red-500 ml-1">*</span>}
               </p>
@@ -326,7 +326,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
             <div className="space-y-5">
               {g.fields.map((q, qi) => (
                 <div key={q.id} className={`pt-5 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-sm' : ''}`}>
-                  <p className="text-base text-[#2c2418] font-bold mb-1">
+                  <p className="text-base text-[#3f3f3f] font-bold mb-1">
                     {q.label}
                     {q.required && <span className="text-red-500 ml-1">*</span>}
                   </p>
