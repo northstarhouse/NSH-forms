@@ -117,18 +117,15 @@ export function TopBar({ onBack }) {
   return (
     <div className="sticky top-0 z-10">
       <GoldBar />
-      <div className="bg-[#fdfbf7] border-b border-[#e0d5c0]">
-        <div className="max-w-4xl mx-auto px-6 py-3 flex justify-between items-center">
-          {onBack ? (
+      {onBack && (
+        <div className="bg-[#fdfbf7] border-b border-[#e0d5c0]">
+          <div className="max-w-4xl mx-auto px-6 py-2.5">
             <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm hover:text-[#6d5436] transition" style={SANS}>
               <ArrowLeft size={16} /> Dashboard
             </button>
-          ) : (
-            <div />
-          )}
-          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-16 w-auto" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

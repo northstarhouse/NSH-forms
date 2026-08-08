@@ -532,13 +532,7 @@ function EventPage({ id }) {
   return (
     <div className="min-h-screen bg-[#d9cdb8]" style={FONT}>
 
-      {/* ── Top bar with logo ── */}
       <GoldBar />
-      <div className="bg-[#fdfbf7] border-b border-[#e0d5c0]">
-        <div className="max-w-4xl mx-auto px-6 py-3 flex justify-end">
-          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-24 w-auto" />
-        </div>
-      </div>
 
       {/* ── Event body: one cream panel holding header + RSVP/shift card ── */}
       <div className="max-w-4xl mx-auto px-6 py-10">
