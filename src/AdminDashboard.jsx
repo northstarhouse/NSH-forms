@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Copy, ArrowLeft, ArrowUp, ArrowDown, Check, Plus, X, Calendar, MapPin } from 'lucide-react'
 import { supabase } from './supabase'
 import {
-  FONT, DISPLAY, SERIF, SANS, INPUT, QUESTION_TYPES,
+  FONT, DISPLAY, SERIF, SANS, INPUT, QUESTION_TYPES, FORM_CATEGORIES,
   slugify, fmtDateShort, genId, mkQuestion,
   parseRoster, fieldsFromRoster, groupFieldsBySection, normalizeFields,
   TopBar, LoadingScreen, NotFound,
@@ -833,7 +833,7 @@ function FormDetail({ id, onBack, templates }) {
   const [loading,   setLoading]   = useState(true)
   const [editing,   setEditing]   = useState(false)
   const [saving,    setSaving]    = useState(false)
-  const [editMeta,  setEditMeta]  = useState({ title: '', description: '' })
+  const [editMeta,  setEditMeta]  = useState({ title: '', description: '', category: '' })
   const [editFields, setEditFields] = useState([])
   const [editShowResponses, setEditShowResponses] = useState(true)
   const [copiedHtml, setCopiedHtml] = useState(false)
@@ -850,7 +850,7 @@ function FormDetail({ id, onBack, templates }) {
       const { data: fo } = await supabase.from('nsh_forms').select('*').eq('id', id).single()
       if (!fo) { setLoading(false); return }
       setForm(fo)
-      setEditMeta({ title: fo.title, description: fo.description || '' })
+      setEditMeta({ title: fo.title, description: fo.description || '', category: fo.category || '' })
       setEditFields(fo.fields || [])
       setEditShowResponses(fo.show_responses !== false)
       const { data: res } = await supabase.from('nsh_form_responses').select('*').eq('form_id', id).order('created_at', { ascending: false })
@@ -863,7 +863,7 @@ function FormDetail({ id, onBack, templates }) {
   const handleSave = async () => {
     setSaving(true)
     const fields = normalizeFields(editFields)
-    const { error } = await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, fields, show_responses: editShowResponses }).eq('id', id)
+    const { error } = await supabase.from('nsh_forms').update({ title: editMeta.title.trim(), description: editMeta.description.trim() || null, category: editMeta.category || null, fields, show_responses: editShowResponses }).eq('id', id)
     if (error) { alert('Save failed: ' + error.message); setSaving(false); return }
     const { data: fo } = await supabase.from('nsh_forms').select('*').eq('id', id).single()
     setForm(fo)
@@ -887,6 +887,10 @@ function FormDetail({ id, onBack, templates }) {
             <div className="space-y-4 mb-6">
               <input value={editMeta.title} onChange={e => setEditMeta({ ...editMeta, title: e.target.value })} placeholder="Form title" className={INPUT} style={SANS} />
               <textarea placeholder="Description (optional)" value={editMeta.description} onChange={e => setEditMeta({ ...editMeta, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
+              <select value={editMeta.category} onChange={e => setEditMeta({ ...editMeta, category: e.target.value })} className={INPUT} style={SANS}>
+                <option value="">No category</option>
+                {FORM_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
               <label className="flex items-center gap-2 text-sm font-bold text-[#2c2418] cursor-pointer">
                 <input type="checkbox" checked={editShowResponses} onChange={e => setEditShowResponses(e.target.checked)} className="w-4 h-4" />
                 Show other people's answers after submitting
@@ -1034,7 +1038,7 @@ function AdminDashboard() {
   const [pollForm, setPollForm] = useState({ question: '', options: ['', ''] })
 
   // Form builder
-  const [formMeta, setFormMeta]           = useState({ title: '', description: '' })
+  const [formMeta, setFormMeta]           = useState({ title: '', description: '', category: '' })
   const [formQuestions, setFormQuestions] = useState([mkQuestion()])
 
   // Template builder
@@ -1087,8 +1091,8 @@ function AdminDashboard() {
     if (!formMeta.title.trim()) return
     setSaving('form')
     const fields = normalizeFields(formQuestions)
-    await supabase.from('nsh_forms').insert({ title: formMeta.title.trim(), description: formMeta.description.trim() || null, fields })
-    setFormMeta({ title: '', description: '' })
+    await supabase.from('nsh_forms').insert({ title: formMeta.title.trim(), description: formMeta.description.trim() || null, category: formMeta.category || null, fields })
+    setFormMeta({ title: '', description: '', category: '' })
     setFormQuestions([mkQuestion()])
     await fetchAll(); setSaving(null)
   }
@@ -1228,6 +1232,10 @@ function AdminDashboard() {
             <div className="space-y-4 mb-6">
               <input placeholder="Form title" value={formMeta.title} onChange={e => setFormMeta({ ...formMeta, title: e.target.value })} className={INPUT} style={SANS} />
               <textarea placeholder="Description (optional)" value={formMeta.description} onChange={e => setFormMeta({ ...formMeta, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
+              <select value={formMeta.category} onChange={e => setFormMeta({ ...formMeta, category: e.target.value })} className={INPUT} style={SANS}>
+                <option value="">No category</option>
+                {FORM_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <RosterGenerator templates={templates} onGenerate={fields => setFormQuestions(prev => [...prev.filter(q => q.label.trim()), ...fields])} />
             <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Questions</p>
@@ -1339,7 +1347,7 @@ function AdminDashboard() {
             {forms.length === 0 && <p className="text-base text-[#9e8b6f] font-bold py-2">No forms yet.</p>}
             {forms.map(f => {
               const q = f.fields?.length ?? 0; const r = f.nsh_form_responses?.[0]?.count ?? 0
-              return <AdminCard key={f.id} title={f.title} meta={`${q} question${q !== 1 ? 's' : ''} · ${r} response${r !== 1 ? 's' : ''}`}
+              return <AdminCard key={f.id} title={f.title} meta={`${f.category ? f.category + ' · ' : ''}${q} question${q !== 1 ? 's' : ''} · ${r} response${r !== 1 ? 's' : ''}`}
                 copied={copiedId === f.id} onCopy={() => copyLink('form', f.id)} onDelete={() => deleteForm(f.id)}
                 onClick={() => setDetailView({ type: 'form', id: f.id })} />
             })}

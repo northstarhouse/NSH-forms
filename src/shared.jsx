@@ -18,6 +18,11 @@ export const QUESTION_TYPES = [
   { value: 'date',            label: 'Date' },
 ]
 
+// Tags a form for later grouping into tabs in the Form Builder (Wedding /
+// Volunteer / Website / Board) — purely organizational, not used by the
+// public-facing form itself.
+export const FORM_CATEGORIES = ['Wedding', 'Volunteer', 'Website', 'Board']
+
 export const slugify = str => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
 export const fmtDate = d => {
