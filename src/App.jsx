@@ -300,19 +300,19 @@ function FormFields({ form, answers, errors, onAnswer }) {
   let counter = 0
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {groups.map((g, gi) => {
         if (!g.section) {
           const q = g.fields[0]
           counter++
           return (
-            <div key={q.id} className={`bg-[#fdfbf7] p-5 rounded-sm transition ${errors[q.id] ? 'border-2 border-red-400' : ''}`}>
+            <div key={q.id} className={`bg-[#fdfbf7] p-4 rounded-sm transition ${errors[q.id] ? 'border-2 border-red-400' : ''}`}>
               <p className="text-base text-[#3f3f3f] font-bold mb-1">
                 {counter}. {q.label}
                 {q.required && <span className="text-red-500 ml-1">*</span>}
               </p>
               {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
-              <div className="mt-3">
+              <div className="mt-2">
                 <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
               </div>
             </div>
@@ -321,12 +321,12 @@ function FormFields({ form, answers, errors, onAnswer }) {
 
         const email = g.fields[0]?.sectionEmail
         return (
-          <div key={gi} className="bg-[#fdfbf7] p-5 rounded-sm">
+          <div key={gi} className="bg-[#fdfbf7] p-4 rounded-sm">
             <p className="text-lg font-normal text-[#2c2418] mb-0.5" style={SERIF}>{g.section}</p>
             {email && <p className="text-sm text-[#9e8b6f] font-bold mb-3">{email}</p>}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {g.fields.map((q, qi) => (
-                <div key={q.id} className={`pt-3 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-sm' : ''}`}>
+                <div key={q.id} className={`pt-2 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-sm' : ''}`}>
                   <p className="text-sm text-[#3f3f3f] font-bold mb-1">
                     {q.label}
                     {q.required && <span className="text-red-500 ml-1">*</span>}
@@ -346,6 +346,8 @@ function FormFields({ form, answers, errors, onAnswer }) {
 }
 
 // ─── Volunteer: Form Page ──────────────────────────────────────────────────────
+
+const isEmbedded = typeof window !== 'undefined' && window.self !== window.top
 
 function FormPage({ id }) {
   const [form, setForm]             = useState(null)
@@ -404,8 +406,8 @@ function FormPage({ id }) {
   if (!form)   return <NotFound />
 
   return (
-    <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
-      <div className="max-w-3xl mx-auto px-6 py-8">
+    <div className={isEmbedded ? 'min-h-screen bg-transparent' : 'min-h-screen bg-[#d9cdb8]'} style={SANS}>
+      <div className={isEmbedded ? 'max-w-3xl mx-auto' : 'max-w-3xl mx-auto px-6 py-8'}>
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
         <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
 
