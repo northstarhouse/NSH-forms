@@ -425,8 +425,8 @@ function FormPage({ id }) {
   if (!form)   return <NotFound />
 
   return (
-    <div ref={rootRef} className={isEmbedded ? 'bg-transparent' : 'min-h-screen bg-[#d9cdb8]'} style={SANS}>
-      <div className={isEmbedded ? 'max-w-3xl mx-auto' : 'max-w-3xl mx-auto px-6 py-8'}>
+    <div ref={rootRef} className={isEmbedded ? 'bg-[#d9cdb8]' : 'min-h-screen bg-[#d9cdb8]'} style={SANS}>
+      <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
         <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
 
