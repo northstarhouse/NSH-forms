@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+/* Embedded forms sit in a Wix iframe box that isn't always expanded to
+   the form's full intended width -- without this, that narrow box makes
+   the iframe show a native horizontal scrollbar ("slider") instead of
+   just letting content wrap/clip. */
+html, body {
+  overflow-x: hidden;
+}
