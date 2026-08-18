@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Check, Calendar, MapPin } from 'lucide-react'
 import { supabase } from './supabase'
 import { FONT, DISPLAY, SERIF, SANS, INPUT, fmtDate, fmtTime, groupFieldsBySection, LoadingScreen, NotFound } from './shared.jsx'
@@ -347,25 +347,6 @@ function FormFields({ form, answers, errors, onAnswer }) {
 
 // ─── Volunteer: Form Page ──────────────────────────────────────────────────────
 
-const isEmbedded = typeof window !== 'undefined' && window.self !== window.top
-
-// Reports this element's actual rendered height to the parent Wix page so the
-// embed snippet's script (see suEmbedHtml in Portal's src/app.jsx) can size
-// the iframe to fit -- avoids ever guessing a fixed pixel height that's
-// either too short (cuts the form off) or too tall (huge blank void below a
-// short form, with nothing but a scrollbar to show for it).
-function useReportHeightToParent(ref) {
-  useEffect(() => {
-    if (!isEmbedded || !ref.current) return
-    const el = ref.current
-    const post = () => window.parent.postMessage({ nshFormHeight: el.scrollHeight }, '*')
-    post()
-    const ro = new ResizeObserver(post)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [ref])
-}
-
 function FormPage({ id }) {
   const [form, setForm]             = useState(null)
   const [answers, setAnswers]       = useState({})
@@ -374,8 +355,6 @@ function FormPage({ id }) {
   const [loading, setLoading]       = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors]         = useState({})
-  const rootRef = useRef(null)
-  useReportHeightToParent(rootRef)
 
   useEffect(() => {
     const load = async () => {
@@ -425,7 +404,7 @@ function FormPage({ id }) {
   if (!form)   return <NotFound />
 
   return (
-    <div ref={rootRef} className={isEmbedded ? 'bg-[#d9cdb8]' : 'min-h-screen bg-[#d9cdb8]'} style={SANS}>
+    <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
         <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
