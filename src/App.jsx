@@ -403,7 +403,7 @@ function FormPage({ id }) {
   if (!form)   return <NotFound />
 
   return (
-    <div className="min-h-screen bg-[#f3efe5]" style={SANS}>
+    <div className="min-h-screen bg-transparent" style={SANS}>
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
         <div className="bg-white rounded-b-sm p-8 sm:p-10">
