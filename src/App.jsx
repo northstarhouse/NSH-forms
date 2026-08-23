@@ -12,6 +12,12 @@ function logActivity(description, action) {
 }
 
 
+// Grid for single/multiple-choice and checkbox options. Uses CSS grid auto-fill
+// (based on the actual rendered container width) instead of a Tailwind sm:
+// breakpoint (based on viewport width) -- the latter never kicks in inside a
+// narrow Wix embed box even when there's plenty of room in the card itself.
+const CHOICE_GRID = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', columnGap: '2rem', rowGap: '0.75rem' }
+
 // ─── Form: Question input renderer ────────────────────────────────────────────
 
 function QuestionInput({ question: q, value, onChange, errors = {} }) {
@@ -53,12 +59,11 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         )
       }
       return (
-        <div className="space-y-2.5">
+        <div style={CHOICE_GRID}>
           {(q.options || []).map((opt, i) => (
             <button key={i} type="button" onClick={() => onChange(opt)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-left border rounded-md transition ${value === opt ? 'border-[#886c44] bg-[#faf6ee]' : 'border-[#ddd6c4] bg-white hover:border-[#886c44]'}`}
-              style={SANS}>
-              <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${value === opt ? 'border-[#886c44]' : 'border-[#c3b89e]'}`}>
+              className="flex items-center gap-2.5 text-left" style={SANS}>
+              <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${value === opt ? 'border-[#886c44]' : 'border-[#999]'}`}>
                 {value === opt && <span className="w-2 h-2 rounded-full bg-[#886c44]" />}
               </span>
               <span className="text-[15px] text-[#3a3226]">{opt}</span>
@@ -70,15 +75,14 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
     case 'checkboxes': {
       const arr = Array.isArray(value) ? value : []
       return (
-        <div className="space-y-2.5">
+        <div style={CHOICE_GRID}>
           {(q.options || []).map((opt, i) => {
             const checked = arr.includes(opt)
             return (
               <button key={i} type="button"
                 onClick={() => onChange(checked ? arr.filter(v => v !== opt) : [...arr, opt])}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left border rounded-md transition ${checked ? 'border-[#886c44] bg-[#faf6ee]' : 'border-[#ddd6c4] bg-white hover:border-[#886c44]'}`}
-                style={SANS}>
-                <span className={`w-4 h-4 rounded-sm border flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#c3b89e] bg-white'}`}>
+                className="flex items-center gap-2.5 text-left" style={SANS}>
+                <span className={`w-4 h-4 rounded-sm border flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#999] bg-white'}`}>
                   {checked && <Check size={11} className="text-white" strokeWidth={3} />}
                 </span>
                 <span className="text-[15px] text-[#3a3226]">{opt}</span>
