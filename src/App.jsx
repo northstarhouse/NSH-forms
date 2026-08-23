@@ -53,10 +53,10 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         )
       }
       return (
-        <div className="flex flex-wrap gap-x-9 gap-y-3">
+        <div className="space-y-2.5">
           {(q.options || []).map((opt, i) => (
             <button key={i} type="button" onClick={() => onChange(opt)}
-              className="flex items-center gap-2.5 text-left basis-full sm:basis-[28%]"
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left border rounded-md transition ${value === opt ? 'border-[#886c44] bg-[#faf6ee]' : 'border-[#ddd6c4] bg-white hover:border-[#886c44]'}`}
               style={SANS}>
               <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${value === opt ? 'border-[#886c44]' : 'border-[#c3b89e]'}`}>
                 {value === opt && <span className="w-2 h-2 rounded-full bg-[#886c44]" />}
@@ -70,13 +70,13 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
     case 'checkboxes': {
       const arr = Array.isArray(value) ? value : []
       return (
-        <div className="flex flex-wrap gap-x-9 gap-y-3">
+        <div className="space-y-2.5">
           {(q.options || []).map((opt, i) => {
             const checked = arr.includes(opt)
             return (
               <button key={i} type="button"
                 onClick={() => onChange(checked ? arr.filter(v => v !== opt) : [...arr, opt])}
-                className="flex items-center gap-2.5 text-left basis-full sm:basis-[28%]"
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left border rounded-md transition ${checked ? 'border-[#886c44] bg-[#faf6ee]' : 'border-[#ddd6c4] bg-white hover:border-[#886c44]'}`}
                 style={SANS}>
                 <span className={`w-4 h-4 rounded-sm border flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#c3b89e] bg-white'}`}>
                   {checked && <Check size={11} className="text-white" strokeWidth={3} />}
@@ -403,7 +403,7 @@ function FormPage({ id }) {
   if (!form)   return <NotFound />
 
   return (
-    <div className="min-h-screen bg-transparent" style={SANS}>
+    <div className="bg-transparent" style={SANS}>
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
         <div className="bg-white rounded-b-sm p-8 sm:p-10">
