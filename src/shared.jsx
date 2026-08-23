@@ -5,7 +5,7 @@ export const FONT    = { fontFamily: "Helvetica, Arial, sans-serif" }
 export const DISPLAY = { fontFamily: "Georgia, 'Times New Roman', serif" }
 export const SERIF   = DISPLAY
 export const SANS    = FONT
-export const INPUT = "w-full p-3 border-2 border-[#886c44]/30 rounded-sm text-base font-normal focus:outline-none focus:border-[#886c44] bg-white"
+export const INPUT = "w-full px-3.5 py-2.5 border border-[#ddd6c4] rounded-md text-base font-normal focus:outline-none focus:border-[#886c44] bg-white text-[#3a3226]"
 
 export const QUESTION_TYPES = [
   { value: 'short_text',      label: 'Short answer' },

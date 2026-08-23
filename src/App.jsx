@@ -21,7 +21,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <div className="space-y-5">
           {(q.parts || []).map(part => (
             <div key={part.id}>
-              <p className="text-sm text-[#3f3f3f] font-bold mb-1">
+              <p className="text-sm text-[#6b6152] mb-1.5">
                 {part.label}
                 {part.required && <span className="text-red-500 ml-1">*</span>}
               </p>
@@ -53,11 +53,16 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         )
       }
       return (
-        <div className="space-y-2">
+        <div className="flex flex-wrap gap-x-9 gap-y-3">
           {(q.options || []).map((opt, i) => (
             <button key={i} type="button" onClick={() => onChange(opt)}
-              className={`w-full max-w-lg p-4 text-left border-2 rounded-sm text-base font-bold transition ${value === opt ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44]/30 bg-white text-[#2c2418] hover:border-[#886c44]'}`}
-              style={SANS}>{opt}</button>
+              className="flex items-center gap-2.5 text-left basis-full sm:basis-[28%]"
+              style={SANS}>
+              <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${value === opt ? 'border-[#886c44]' : 'border-[#c3b89e]'}`}>
+                {value === opt && <span className="w-2 h-2 rounded-full bg-[#886c44]" />}
+              </span>
+              <span className="text-[15px] text-[#3a3226]">{opt}</span>
+            </button>
           ))}
         </div>
       )
@@ -65,18 +70,18 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
     case 'checkboxes': {
       const arr = Array.isArray(value) ? value : []
       return (
-        <div className="space-y-2">
+        <div className="flex flex-wrap gap-x-9 gap-y-3">
           {(q.options || []).map((opt, i) => {
             const checked = arr.includes(opt)
             return (
               <button key={i} type="button"
                 onClick={() => onChange(checked ? arr.filter(v => v !== opt) : [...arr, opt])}
-                className={`w-full max-w-lg p-4 text-left border-2 rounded-sm text-base font-bold transition flex items-center gap-3 ${checked ? 'border-[#886c44] bg-[#f5f0e8] text-[#2c2418]' : 'border-[#886c44]/30 bg-white text-[#2c2418] hover:border-[#886c44]'}`}
+                className="flex items-center gap-2.5 text-left basis-full sm:basis-[28%]"
                 style={SANS}>
-                <div className={`w-5 h-5 rounded-none border-2 flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#886c44]/30'}`}>
-                  {checked && <Check size={12} className="text-white" />}
-                </div>
-                {opt}
+                <span className={`w-4 h-4 rounded-sm border flex-shrink-0 flex items-center justify-center ${checked ? 'bg-[#886c44] border-[#886c44]' : 'border-[#c3b89e] bg-white'}`}>
+                  {checked && <Check size={11} className="text-white" strokeWidth={3} />}
+                </span>
+                <span className="text-[15px] text-[#3a3226]">{opt}</span>
               </button>
             )
           })}
@@ -263,7 +268,7 @@ function FormSummary({ form, responses }) {
   const groups = groupFieldsBySection(form.fields || [])
 
   return (
-    <div className="bg-white p-8 rounded-sm border border-[#886c44] max-w-2xl">
+    <div className="bg-[#faf8f3] p-8 rounded-md border border-[#886c44] max-w-2xl">
       <h3 className="text-2xl font-normal text-[#2c2418] mb-1" style={SERIF}>Responses so far</h3>
       <p className="text-sm text-[#9e8b6f] font-bold mb-8">{total} response{total !== 1 ? 's' : ''} total</p>
 
@@ -297,44 +302,38 @@ function FormSummary({ form, responses }) {
 
 function FormFields({ form, answers, errors, onAnswer }) {
   const groups = groupFieldsBySection(form.fields || [])
-  let counter = 0
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-7">
       {groups.map((g, gi) => {
         if (!g.section) {
           const q = g.fields[0]
-          counter++
           return (
-            <div key={q.id} className={`bg-[#fdfbf7] p-4 rounded-sm transition ${errors[q.id] ? 'border-2 border-red-400' : ''}`}>
-              <p className="text-base text-[#3f3f3f] font-bold mb-1">
-                {counter}. {q.label}
+            <div key={q.id} className={`transition ${errors[q.id] ? 'ring-2 ring-red-400 rounded-md p-3 -m-3' : ''}`}>
+              <p className="text-sm text-[#6b6152] mb-2">
+                {q.label}
                 {q.required && <span className="text-red-500 ml-1">*</span>}
               </p>
-              {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
-              <div className="mt-2">
-                <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
-              </div>
+              {errors[q.id] && <p className="text-xs text-red-500 font-bold mb-2">Required.</p>}
+              <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
             </div>
           )
         }
 
         const email = g.fields[0]?.sectionEmail
         return (
-          <div key={gi} className="bg-[#fdfbf7] p-4 rounded-sm">
+          <div key={gi} className="bg-[#faf8f3] border border-[#eee7d8] p-5 rounded-md">
             <p className="text-lg font-normal text-[#2c2418] mb-0.5" style={SERIF}>{g.section}</p>
             {email && <p className="text-sm text-[#9e8b6f] font-bold mb-3">{email}</p>}
-            <div className="space-y-2">
+            <div className="space-y-5">
               {g.fields.map((q, qi) => (
-                <div key={q.id} className={`pt-2 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-sm' : ''}`}>
-                  <p className="text-sm text-[#3f3f3f] font-bold mb-1">
+                <div key={q.id} className={`pt-4 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-md p-2 -m-2' : ''}`}>
+                  <p className="text-sm text-[#6b6152] mb-2">
                     {q.label}
                     {q.required && <span className="text-red-500 ml-1">*</span>}
                   </p>
-                  {errors[q.id] && <p className="text-sm text-red-500 font-bold mb-2">Required.</p>}
-                  <div className="mt-2">
-                    <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
-                  </div>
+                  {errors[q.id] && <p className="text-xs text-red-500 font-bold mb-2">Required.</p>}
+                  <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
                 </div>
               ))}
             </div>
@@ -404,27 +403,27 @@ function FormPage({ id }) {
   if (!form)   return <NotFound />
 
   return (
-    <div className="min-h-screen bg-[#d9cdb8]" style={SANS}>
+    <div className="min-h-screen bg-[#f3efe5]" style={SANS}>
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
-        <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
+        <div className="bg-white rounded-b-sm p-8 sm:p-10">
 
-          <h1 className="text-[30px] font-normal mb-6 text-[#2a2420] leading-tight text-center" style={SERIF}>{form.title}</h1>
-          <div className="border-t border-[#e5ddcf] w-3/5 mx-auto mb-6" />
+          <h1 className="text-[28px] font-normal mb-2 text-[#2a2420] leading-tight" style={SERIF}>{form.title}</h1>
           {form.description && (
-            <p className="text-[15px] text-[#555] mb-10 leading-relaxed text-center" style={SANS}>{form.description}</p>
+            <p className="text-[15px] text-[#6b6152] mb-8 leading-relaxed" style={SANS}>{form.description}</p>
           )}
+          {!form.description && <div className="mb-6" />}
 
           {submitted ? (
             <>
-              <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-white rounded-sm border border-[#886c44]">
+              <div className="flex items-center gap-3 py-5 px-6 mb-10 bg-[#faf8f3] rounded-md border border-[#886c44]">
                 <Check size={22} className="text-[#886c44] flex-shrink-0" />
                 <p className="text-lg text-[#2c2418] font-bold">Your response has been recorded. Thank you!</p>
               </div>
               {form.show_responses !== false && <FormSummary form={form} responses={responses} />}
             </>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               <FormFields
                 form={form}
                 answers={answers}
@@ -438,12 +437,14 @@ function FormPage({ id }) {
                   })
                 }}
               />
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-8 py-4 bg-[#886c44] text-white rounded-sm text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
-                {submitting ? 'Submitting…' : 'Submit'}
-              </button>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="px-8 py-3 bg-[#886c44] text-white rounded-md text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+                  {submitting ? 'Submitting…' : 'Submit'}
+                </button>
+              </div>
             </div>
           )}
         </div>
