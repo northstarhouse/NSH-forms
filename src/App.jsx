@@ -392,7 +392,13 @@ function FormPage({ id }) {
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
     setSubmitting(true)
-    await supabase.from('nsh_form_responses').insert({ form_id: id, answers })
+    const { error: insertError } = await supabase.from('nsh_form_responses').insert({ form_id: id, answers })
+    // Tell an embedding page (e.g. northstarhouse.org) a submission was saved,
+    // so it can record an ad conversion. Generic on purpose -- the parent
+    // decides which form ids count; this form app stays form-agnostic.
+    if (!insertError && window.parent !== window) {
+      window.parent.postMessage({ type: 'nsh:form-submitted', formId: id }, '*')
+    }
     logActivity(`New submission on "${form.title}"`, 'form_submission')
     if (form.show_responses !== false) {
       const { data: res } = await supabase.from('nsh_form_responses').select('answers').eq('form_id', id)
