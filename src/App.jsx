@@ -341,7 +341,9 @@ function FormFields({ form, answers, errors, onAnswer }) {
               </p>
               {errors[q.id] && <p className="text-xs text-red-500 font-bold mb-2">Required.</p>}
               <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
-              <QuestionNote value={answers[q.id + '__note']} onChange={v => onAnswer({ id: q.id + '__note' }, v)} />
+              {q.type !== 'short_text' && q.type !== 'long_text' && (
+                <QuestionNote value={answers[q.id + '__note']} onChange={v => onAnswer({ id: q.id + '__note' }, v)} />
+              )}
             </div>
           )
         }
@@ -360,7 +362,9 @@ function FormFields({ form, answers, errors, onAnswer }) {
                   </p>
                   {errors[q.id] && <p className="text-xs text-red-500 font-bold mb-2">Required.</p>}
                   <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
-                  <QuestionNote value={answers[q.id + '__note']} onChange={v => onAnswer({ id: q.id + '__note' }, v)} />
+                  {q.type !== 'short_text' && q.type !== 'long_text' && (
+                    <QuestionNote value={answers[q.id + '__note']} onChange={v => onAnswer({ id: q.id + '__note' }, v)} />
+                  )}
                 </div>
               ))}
             </div>
