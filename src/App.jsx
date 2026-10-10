@@ -426,7 +426,10 @@ function FormPage({ id }) {
     if (!insertError && window.parent !== window) {
       window.parent.postMessage({ type: 'nsh:form-submitted', formId: id }, '*')
     }
-    logActivity(`New submission on "${form.title}"`, 'form_submission')
+    // Logged to activity_log by a DB trigger on nsh_form_responses insert
+    // (trg_log_form_submission_to_activity), not from here -- this used to
+    // also call logActivity() client-side, which double-logged every
+    // submission once that trigger was added.
     if (form.show_responses !== false) {
       const { data: res } = await supabase.from('nsh_form_responses').select('answers').eq('form_id', id)
       setResponses(res || [])
@@ -474,18 +477,20 @@ function FormPage({ id }) {
                   })
                 }}
               />
-              <div className="flex justify-end">
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="px-8 py-3 bg-[#886c44] text-white rounded-md text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
-                  {submitting ? 'Submitting…' : 'Submit'}
-                </button>
-              </div>
             </div>
           )}
 
-          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="North Star House" className="h-10 w-auto mt-8" />
+          <div className="flex justify-between items-center mt-8">
+            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="North Star House" className="h-10 w-auto" />
+            {!submitted && (
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="px-8 py-3 bg-[#886c44] text-white rounded-md text-base font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
+                {submitting ? 'Submitting…' : 'Submit'}
+              </button>
+            )}
+          </div>
         </div>
         <div className="h-1.5 bg-[#886c44] rounded-b-sm" />
       </div>
