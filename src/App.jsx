@@ -441,6 +441,8 @@ function FormPage({ id }) {
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
         <div className="bg-white p-8 sm:p-10">
 
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="North Star House" className="h-12 w-auto mb-6" />
+
           <h1 className="text-[28px] font-normal mb-2 text-[#2a2420] leading-tight" style={SERIF}>{form.title}</h1>
           {form.description && (
             <p className="text-[15px] text-[#6b6152] mb-8 leading-relaxed" style={SANS}>{form.description}</p>
@@ -482,9 +484,6 @@ function FormPage({ id }) {
           )}
         </div>
         <div className="h-1.5 bg-[#886c44] rounded-b-sm" />
-        <div className="flex justify-start mt-4">
-          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-12 w-auto" />
-        </div>
       </div>
     </div>
   )

@@ -515,7 +515,7 @@ function EventDetail({ id, onBack }) {
           <button onClick={onBack} className="flex items-center gap-2 text-[#886c44] font-bold text-sm hover:text-[#6d5436] transition">
             <ArrowLeft size={16} /> Dashboard
           </button>
-          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-16 w-auto" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="North Star House" className="h-16 w-auto" />
         </div>
       </div>
 
