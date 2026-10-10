@@ -314,7 +314,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
           const q = g.fields[0]
           return (
             <div key={q.id} className={`transition ${errors[q.id] ? 'ring-2 ring-red-400 rounded-md p-3 -m-3' : ''}`}>
-              <p className="text-sm text-[#6b6152] mb-2">
+              <p className="text-sm font-bold text-[#2c2418] mb-2">
                 {q.label}
                 {q.required && <span className="text-red-500 ml-1">*</span>}
               </p>
@@ -332,7 +332,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
             <div className="space-y-5">
               {g.fields.map((q, qi) => (
                 <div key={q.id} className={`pt-4 first:pt-0 border-t first:border-0 border-[#e8e4dc] ${errors[q.id] ? 'ring-2 ring-red-400 rounded-md p-2 -m-2' : ''}`}>
-                  <p className="text-sm text-[#6b6152] mb-2">
+                  <p className="text-sm font-bold text-[#2c2418] mb-2">
                     {q.label}
                     {q.required && <span className="text-red-500 ml-1">*</span>}
                   </p>
@@ -415,9 +415,6 @@ function FormPage({ id }) {
   return (
     <div className="bg-[#e6ded0] min-h-screen" style={SANS}>
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="flex justify-center mb-6">
-          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-20 w-auto" />
-        </div>
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
         <div className="bg-white p-8 sm:p-10">
 
@@ -462,6 +459,9 @@ function FormPage({ id }) {
           )}
         </div>
         <div className="h-1.5 bg-[#886c44] rounded-b-sm" />
+        <div className="flex justify-start mt-4">
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-12 w-auto" />
+        </div>
       </div>
     </div>
   )
