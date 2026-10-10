@@ -823,8 +823,9 @@ function answerEntries(field, answers) {
       .filter(({ ans }) => ans !== undefined && ans !== null && ans !== '')
   }
   const ans = answers?.[field.id]
-  if (ans === undefined || ans === null || ans === '') return []
-  return [{ id: field.id, label: field.label, ans }]
+  const note = answers?.[field.id + '__note']
+  if ((ans === undefined || ans === null || ans === '') && !note) return []
+  return [{ id: field.id, label: field.label, ans: ans ?? '', note }]
 }
 
 function FormDetail({ id, onBack, templates }) {
@@ -996,6 +997,7 @@ function FormDetail({ id, onBack, templates }) {
                           <div key={field.id}>
                             <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{e.label}</p>
                             <p className="text-base text-[#2c2418]">{Array.isArray(e.ans) ? e.ans.join(', ') : String(e.ans)}</p>
+                            {e.note && <p className="text-sm text-[#9e8b6f] italic mt-1">Note: {e.note}</p>}
                           </div>
                         )
                       }
@@ -1009,6 +1011,7 @@ function FormDetail({ id, onBack, templates }) {
                               <div key={e.id}>
                                 <p className="text-xs font-bold text-[#9e8b6f] uppercase tracking-wide mb-0.5">{e.label}</p>
                                 <p className="text-base text-[#2c2418]">{Array.isArray(e.ans) ? e.ans.join(', ') : String(e.ans)}</p>
+                                {e.note && <p className="text-sm text-[#9e8b6f] italic mt-1">Note: {e.note}</p>}
                               </div>
                             ))}
                           </div>

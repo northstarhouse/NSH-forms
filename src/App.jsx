@@ -302,6 +302,27 @@ function FormSummary({ form, responses }) {
   )
 }
 
+// ─── Form: optional free-text note attached to any question ───────────────────
+// Stored alongside the answer as `${question.id}__note` in the same answers
+// blob, so it needs no schema change. Starts collapsed; opens if it already
+// has a value (e.g. navigating back after a validation error).
+
+function QuestionNote({ value, onChange }) {
+  const [open, setOpen] = useState(Boolean(value))
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)}
+        className="mt-2 text-xs font-bold text-[#9e8b6f] hover:text-[#886c44] transition">
+        + Add notes (optional)
+      </button>
+    )
+  }
+  return (
+    <textarea value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Additional notes…"
+      className={`${INPUT} mt-2`} rows={2} style={SANS} />
+  )
+}
+
 // ─── Form: grouped question list (plain questions + per-person template sections) ──
 
 function FormFields({ form, answers, errors, onAnswer }) {
@@ -320,6 +341,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
               </p>
               {errors[q.id] && <p className="text-xs text-red-500 font-bold mb-2">Required.</p>}
               <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
+              <QuestionNote value={answers[q.id + '__note']} onChange={v => onAnswer({ id: q.id + '__note' }, v)} />
             </div>
           )
         }
@@ -338,6 +360,7 @@ function FormFields({ form, answers, errors, onAnswer }) {
                   </p>
                   {errors[q.id] && <p className="text-xs text-red-500 font-bold mb-2">Required.</p>}
                   <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
+                  <QuestionNote value={answers[q.id + '__note']} onChange={v => onAnswer({ id: q.id + '__note' }, v)} />
                 </div>
               ))}
             </div>
