@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Copy, ArrowLeft, ArrowUp, ArrowDown, Check, Plus, X, Calendar, MapPin } from 'lucide-react'
+import { Copy, ArrowLeft, ArrowUp, ArrowDown, Check, Plus, X, Calendar, MapPin, ExternalLink } from 'lucide-react'
 import { supabase } from './supabase'
 import {
   FONT, DISPLAY, SERIF, SANS, INPUT, QUESTION_TYPES, FORM_CATEGORIES,
@@ -940,6 +940,11 @@ function FormDetail({ id, onBack, templates }) {
               </p>
             </div>
             <div className="flex items-center gap-2 ml-6 mt-1 flex-shrink-0">
+              <a href={`${window.location.origin}${window.location.pathname}?view=form&id=${id}`} target="_blank" rel="noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition">
+                <ExternalLink size={15} />
+                Preview Form
+              </a>
               <button onClick={copyEmbedHtml}
                 className="flex items-center gap-1.5 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition">
                 {copiedHtml ? <Check size={15} /> : <Copy size={15} />}

@@ -413,8 +413,11 @@ function FormPage({ id }) {
   if (!form)   return <NotFound />
 
   return (
-    <div className="bg-transparent" style={SANS}>
+    <div className="bg-[#e6ded0] min-h-screen" style={SANS}>
       <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="flex justify-center mb-6">
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="North Star House" className="h-20 w-auto" />
+        </div>
         <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
         <div className="bg-white p-8 sm:p-10">
 
