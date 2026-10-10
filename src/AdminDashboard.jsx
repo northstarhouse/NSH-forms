@@ -881,6 +881,14 @@ function FormDetail({ id, onBack, templates }) {
       <TopBar onBack={onBack} />
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
 
+        <div className="flex justify-end mb-4">
+          <a href={`${window.location.origin}${window.location.pathname}?view=form&id=${id}`} target="_blank" rel="noreferrer"
+            className="flex items-center gap-1.5 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition">
+            <ExternalLink size={15} />
+            Preview Form
+          </a>
+        </div>
+
         {editing ? (
           <div className="bg-white p-8 rounded-xl border-2 border-[#e8e4dc] mb-6">
             <p className="text-xs uppercase tracking-widest text-[#9e8b6f] font-bold mb-5">Edit Form</p>
@@ -940,11 +948,6 @@ function FormDetail({ id, onBack, templates }) {
               </p>
             </div>
             <div className="flex items-center gap-2 ml-6 mt-1 flex-shrink-0">
-              <a href={`${window.location.origin}${window.location.pathname}?view=form&id=${id}`} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition">
-                <ExternalLink size={15} />
-                Preview Form
-              </a>
               <button onClick={copyEmbedHtml}
                 className="flex items-center gap-1.5 px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition">
                 {copiedHtml ? <Check size={15} /> : <Copy size={15} />}
