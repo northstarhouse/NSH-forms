@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>North Star House</title>
+    <script>
+      // GitHub Pages serves this page for any address that is not a real file (like /state-of-the-star-2026).
+      // It sends the visitor to the app with the original path in ?p=, and the app puts the clean address back.
+      var l = window.location;
+      var keep = l.hostname.indexOf('github.io') > -1 ? 1 : 0; // /NSH-forms/ prefix on github.io, none on a custom domain
+      var segs = l.pathname.split('/').slice(1);
+      var root = keep ? '/' + segs.slice(0, keep).join('/') : '';
+      var rest = '/' + segs.slice(keep).join('/');
+      l.replace(l.protocol + '//' + l.host + root + '/?p=' + encodeURIComponent(rest + l.search + l.hash));
+    </script>
+  </head>
+  <body></body>
+</html>

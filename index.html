@@ -6,6 +6,15 @@
     <title>North Star House — Forms & Outreach</title>
   </head>
   <body>
+    <script>
+      // Undo the 404.html hop: put the clean address (e.g. /state-of-the-star-2026) back in the address bar.
+      (function () {
+        var p = new URLSearchParams(window.location.search).get('p');
+        if (!p) return;
+        var root = window.location.hostname.indexOf('github.io') > -1 ? '/NSH-forms' : '';
+        window.history.replaceState(null, null, root + p);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

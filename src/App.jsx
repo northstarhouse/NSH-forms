@@ -893,8 +893,12 @@ export default function App() {
   const rawId = params.get('id')
   const id   = rawId?.includes('__') ? rawId.split('__').pop() : rawId
 
-  const eventSlug = params.get('e')
-  if (eventSlug) return <EventBySlug slug={eventSlug} />
+  // Clean links: /state-of-the-star-2026 (the 404.html hop puts the path back in the address bar)
+  let pathSlug = window.location.pathname
+  if (pathSlug.startsWith(import.meta.env.BASE_URL)) pathSlug = pathSlug.slice(import.meta.env.BASE_URL.length)
+  pathSlug = pathSlug.replace(/^\/+|\/+$/g, '')
+  const eventSlug = params.get('e') || (/^[a-z0-9][a-z0-9-]*$/i.test(pathSlug) && pathSlug !== 'index.html' ? pathSlug : null)
+  if (eventSlug && !view) return <EventBySlug slug={eventSlug} />
   if (view === 'event' && id) return <EventPage id={id} />
   if (view === 'poll'  && id) return <PollPage id={id} />
   if (view === 'form'  && id) return <FormPage id={id} />
