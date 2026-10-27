@@ -868,6 +868,17 @@ function PollPage({ id }) {
 }
 
 
+// Short link: ?e=state-of-the-star  ->  look the slug up, then show the normal event page.
+function EventBySlug({ slug }) {
+  const [id, setId] = useState(undefined)
+  useEffect(() => {
+    supabase.from('vol_events').select('id').eq('slug', slug.toLowerCase()).maybeSingle().then(({ data }) => setId(data?.id || null))
+  }, [slug])
+  if (id === undefined) return <LoadingScreen />
+  if (!id) return <NotFound />
+  return <EventPage id={id} />
+}
+
 // ─── Router ────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -876,6 +887,8 @@ export default function App() {
   const rawId = params.get('id')
   const id   = rawId?.includes('__') ? rawId.split('__').pop() : rawId
 
+  const eventSlug = params.get('e')
+  if (eventSlug) return <EventBySlug slug={eventSlug} />
   if (view === 'event' && id) return <EventPage id={id} />
   if (view === 'poll'  && id) return <PollPage id={id} />
   if (view === 'form'  && id) return <FormPage id={id} />

@@ -1163,9 +1163,11 @@ function AdminDashboard() {
   const deleteForm     = async (id) => { await supabase.from('nsh_forms').delete().eq('id', id);     setForms(prev => prev.filter(f => f.id !== id)) }
   const deleteTemplate = async (id) => { await supabase.from('nsh_templates').delete().eq('id', id); setTemplates(prev => prev.filter(t => t.id !== id)) }
 
-  const copyLink = (type, id, title) => {
+  const copyLink = (type, id, title, slug) => {
     const idParam = (type === 'event' && title) ? `${slugify(title)}__${id}` : id
-    const link = `${window.location.origin}${window.location.pathname}?view=${type}&id=${idParam}`
+    const link = (type === 'event' && slug)
+      ? `${window.location.origin}${window.location.pathname}?e=${encodeURIComponent(slug)}`
+      : `${window.location.origin}${window.location.pathname}?view=${type}&id=${idParam}`
     navigator.clipboard.writeText(link)
     setCopiedId(id); setTimeout(() => setCopiedId(null), 2000)
   }
@@ -1380,7 +1382,7 @@ function AdminDashboard() {
             {rsvpEvents.map(e => {
               const n = e.vol_event_responses?.[0]?.count ?? 0
               return <AdminCard key={e.id} title={e.title} subtitle={fmtDateShort(e.date)} meta={`${n} response${n !== 1 ? 's' : ''}`}
-                copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title)} onDelete={() => deleteEvent(e.id)}
+                copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title, e.slug)} onDelete={() => deleteEvent(e.id)}
                 onClick={() => setDetailView({ type: 'event', id: e.id })} />
             })}
           </div>
@@ -1393,7 +1395,7 @@ function AdminDashboard() {
             {shiftEvents.map(e => {
               const n = e.vol_shift_slots?.[0]?.count ?? 0
               return <AdminCard key={e.id} title={e.title} subtitle={fmtDateShort(e.date)} meta={`${n} time slot${n !== 1 ? 's' : ''}`}
-                copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title)} onDelete={() => deleteEvent(e.id)}
+                copied={copiedId === e.id} onCopy={() => copyLink('event', e.id, e.title, e.slug)} onDelete={() => deleteEvent(e.id)}
                 onClick={() => setDetailView({ type: 'event', id: e.id })} />
             })}
           </div>
