@@ -584,7 +584,7 @@ function EventPage({ id }) {
   const timeStr = fmtTime(event.time)
 
   return (
-    <div className="min-h-screen bg-[#d9cdb8]" style={FONT}>
+    <div className="min-h-screen bg-[#ece8e1]" style={FONT}>
 
       {/* ── Event body: one cream panel holding header + RSVP/shift card ── */}
       <div className="max-w-4xl mx-auto px-6 py-8">
