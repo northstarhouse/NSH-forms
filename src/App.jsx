@@ -591,6 +591,10 @@ function EventPage({ id }) {
        <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
        <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
 
+        {event.image_url && (
+          <img src={event.image_url} alt={event.title} className="block w-full max-h-[28rem] object-contain bg-[#f4eee3] rounded-sm mb-8" />
+        )}
+
         {/* Event header */}
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#886c44] mb-5">
           {isShift ? 'Volunteer Sign-Up' : 'Event'}

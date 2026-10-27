@@ -413,6 +413,23 @@ function EventDetail({ id, onBack }) {
   const [editForm,  setEditForm]  = useState({ title: '', date: '', time: '', description: '' })
   const [editOptions, setEditOptions] = useState([])
   const [editSlots, setEditSlots] = useState([])
+  const [editImage, setEditImage] = useState('')
+  const [imageBusy, setImageBusy] = useState(false)
+
+  // Event image lives in the public event-flyers bucket and shows at the top of the public form.
+  const handleImageFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) { alert('Please choose an image file (JPG, PNG, WebP).'); return }
+    if (file.size > 8 * 1024 * 1024) { alert('That image is over 8 MB. Please choose a smaller one.'); return }
+    setImageBusy(true)
+    const path = 'rsvp/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const { error } = await supabase.storage.from('event-flyers').upload(path, file, { contentType: file.type })
+    setImageBusy(false)
+    if (error) { alert('Image upload failed: ' + error.message); return }
+    setEditImage(supabase.storage.from('event-flyers').getPublicUrl(path).data.publicUrl)
+  }
 
   useEffect(() => {
     async function load() {
@@ -421,6 +438,7 @@ function EventDetail({ id, onBack }) {
       setEvent(ev)
       setEditForm({ title: ev.title, date: ev.date || '', time: ev.time || '', description: ev.description || '' })
       setEditOptions(ev.options?.length ? [...ev.options] : ['', ''])
+      setEditImage(ev.image_url || '')
       if (ev.event_type === 'rsvp') {
         const { data: res } = await supabase.from('vol_event_responses').select('*').eq('event_id', id).order('created_at')
         setResponses(res || [])
@@ -450,6 +468,7 @@ function EventDetail({ id, onBack }) {
       time: editForm.time || null,
       description: editForm.description.trim() || null,
       options: event.event_type === 'rsvp' ? editOptions.filter(o => o.trim()) : [],
+      ...((editImage || event.image_url) ? { image_url: editImage || null } : {}),
     }).eq('id', id)
     if (evErr) { alert('Save failed: ' + evErr.message); setSaving(false); return }
     if (event.event_type === 'shift') {
@@ -531,6 +550,19 @@ function EventDetail({ id, onBack }) {
                 <input type="text" placeholder="e.g. 9:00 AM – 5:00 PM" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className={INPUT} style={SANS} />
               </div>
               <textarea placeholder="Description (optional)" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className={INPUT} rows={2} style={SANS} />
+              <div className="border border-dashed border-[#d8cdb9] rounded-lg p-4 bg-[#faf7f2]">
+                <p className="text-sm font-bold text-[#2c2418] uppercase tracking-wide mb-3">Event image (optional)</p>
+                {editImage && <img src={editImage} alt="Event" className="block max-w-full max-h-56 rounded-md mb-3 border border-[#e0d5c0]" />}
+                <div className="flex items-center gap-4 flex-wrap">
+                  <label className={`px-4 py-2 border-2 border-[#886c44] text-[#886c44] rounded-lg text-sm font-bold hover:bg-[#886c44] hover:text-white transition ${imageBusy ? 'opacity-60' : 'cursor-pointer'}`}>
+                    {imageBusy ? 'Uploading…' : editImage ? 'Replace image' : 'Upload image'}
+                    <input type="file" accept="image/*" onChange={handleImageFile} disabled={imageBusy} className="hidden" />
+                  </label>
+                  {editImage && !imageBusy && (
+                    <button type="button" onClick={() => setEditImage('')} className="text-sm text-[#9e8b6f] hover:text-red-500 transition">Remove</button>
+                  )}
+                </div>
+              </div>
             </div>
             {!isShift && (
               <div className="mb-6">
@@ -573,7 +605,7 @@ function EventDetail({ id, onBack }) {
               <button onClick={handleSave} disabled={saving} className="px-6 py-3 bg-[#886c44] text-white rounded-xl text-sm font-bold hover:bg-[#6d5436] transition disabled:opacity-60">
                 {saving ? 'Saving…' : 'Save changes'}
               </button>
-              <button onClick={() => { setEditing(false); setEditForm({ title: event.title, date: event.date || '', time: event.time || '', description: event.description || '' }); setEditSlots(slots.map(s => ({ ...s }))) }}
+              <button onClick={() => { setEditing(false); setEditImage(event.image_url || ''); setEditForm({ title: event.title, date: event.date || '', time: event.time || '', description: event.description || '' }); setEditSlots(slots.map(s => ({ ...s }))) }}
                 className="px-6 py-3 rounded-xl text-sm font-bold text-[#9e8b6f] hover:bg-[#f0e6d8] transition">
                 Cancel
               </button>
@@ -604,6 +636,7 @@ function EventDetail({ id, onBack }) {
               </div>
             </div>
             {event.description && <p className="text-base text-[#5a4a35] leading-relaxed">{event.description}</p>}
+            {event.image_url && <img src={event.image_url} alt={event.title} className="block max-w-full max-h-72 rounded-md mt-5 border border-[#e0d5c0]" />}
           </div>
         )}
 
