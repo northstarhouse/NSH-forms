@@ -872,7 +872,13 @@ function PollPage({ id }) {
 function EventBySlug({ slug }) {
   const [id, setId] = useState(undefined)
   useEffect(() => {
-    supabase.from('vol_events').select('id').eq('slug', slug.toLowerCase()).maybeSingle().then(({ data }) => setId(data?.id || null))
+    const key = slug.toLowerCase()
+    // exact match first; a link without the year (e.g. ?e=state-of-the-star) opens the newest one with a year
+    supabase.from('vol_events').select('id').eq('slug', key).maybeSingle().then(async ({ data }) => {
+      if (data?.id) return setId(data.id)
+      const { data: rows } = await supabase.from('vol_events').select('id,slug').like('slug', key + '-____').order('slug', { ascending: false }).limit(1)
+      setId(rows?.[0]?.id || null)
+    })
   }, [slug])
   if (id === undefined) return <LoadingScreen />
   if (!id) return <NotFound />
