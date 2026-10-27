@@ -591,37 +591,40 @@ function EventPage({ id }) {
        <div className="h-3.5 bg-[#886c44] rounded-t-sm" />
        <div className="bg-[#fdfbf7] rounded-b-sm p-8 sm:p-10">
 
-        {event.image_url && (
-          <img src={event.image_url} alt={event.title} className="block w-full max-h-[28rem] object-contain bg-[#f4eee3] rounded-sm mb-8" />
-        )}
-
-        {/* Event header */}
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#886c44] mb-5">
-          {isShift ? 'Volunteer Sign-Up' : 'Event'}
-        </p>
-
-        <h1 className="text-4xl sm:text-5xl font-bold text-[#1e1a14] leading-tight mb-7" style={DISPLAY}>
-          {event.title}
-        </h1>
-
-        <div className="flex flex-wrap items-center gap-x-7 gap-y-2 mb-6">
-          {(dateStr || event.time) && (
-            <div className="flex items-center gap-2">
-              <Calendar size={14} className="text-[#886c44] flex-shrink-0" />
-              <span className="text-sm font-medium text-[#2c2418]">
-                {dateStr}{dateStr && event.time ? ' · ' : ''}{event.time}
-              </span>
-            </div>
+        {/* Event header (with the event image beside it on wider screens) */}
+        <div className={event.image_url ? 'mb-8 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,21rem)] md:gap-10 md:items-start' : ''}>
+          {event.image_url && (
+            <img src={event.image_url} alt={event.title} className="block w-full max-w-sm mx-auto md:max-w-none md:order-last mb-8 md:mb-0 rounded-sm shadow-sm" />
           )}
-          <div className="flex items-center gap-2">
-            <MapPin size={14} className="text-[#886c44] flex-shrink-0" />
-            <span className="text-sm font-medium text-[#2c2418]">The North Star House</span>
+          <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#886c44] mb-5">
+            {isShift ? 'Volunteer Sign-Up' : 'Event'}
+          </p>
+
+          <h1 className="text-4xl sm:text-5xl font-bold text-[#1e1a14] leading-tight mb-7" style={DISPLAY}>
+            {event.title}
+          </h1>
+
+          <div className="flex flex-wrap items-center gap-x-7 gap-y-2 mb-6">
+            {(dateStr || event.time) && (
+              <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-[#886c44] flex-shrink-0" />
+                <span className="text-sm font-medium text-[#2c2418]">
+                  {dateStr}{dateStr && event.time ? ' · ' : ''}{event.time}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <MapPin size={14} className="text-[#886c44] flex-shrink-0" />
+              <span className="text-sm font-medium text-[#2c2418]">The North Star House</span>
+            </div>
+          </div>
+
+          {event.description && (
+            <p className={`text-base text-[#5a4a35] leading-relaxed max-w-xl ${event.image_url ? "" : "mb-8"}`}>{event.description}</p>
+          )}
           </div>
         </div>
-
-        {event.description && (
-          <p className="text-base text-[#5a4a35] leading-relaxed max-w-xl mb-8">{event.description}</p>
-        )}
 
         {/* RSVP */}
         {!isShift && (
