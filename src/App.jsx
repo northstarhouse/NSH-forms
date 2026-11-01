@@ -656,7 +656,7 @@ function EventPage({ id }) {
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-2">Your Name</label>
                   <input type="text" value={name} onChange={e => setName(e.target.value)}
-                    placeholder="Full name" autoFocus
+                    placeholder="Full name"
                     className="w-full px-4 py-3 border border-[#ddd4c0] rounded-sm text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
                 </div>
                 <div className="flex flex-wrap gap-3">
