@@ -362,6 +362,17 @@ function FormFields({ form, answers, errors, onAnswer }) {
                   </p>
                   {errors[q.id] && <p className="text-xs text-red-500 font-bold mb-2">Required.</p>}
                   <QuestionInput question={q} value={answers[q.id]} onChange={v => onAnswer(q, v)} errors={errors} />
+                  {q.id === 'pt4addr1' && (
+                    // Pre-booking form: the second signer lives at the same address as the first one.
+                    <button
+                      type="button"
+                      disabled={!String(answers.ps4addr1 || '').trim()}
+                      onClick={() => onAnswer(q, String(answers.ps4addr1 || '').trim())}
+                      className="mt-2 text-sm font-bold text-[#886c44] border border-[#d9cdb6] rounded-sm px-3 py-1.5 bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Same as above
+                    </button>
+                  )}
                   {q.type !== 'short_text' && q.type !== 'long_text' && (
                     <QuestionNote value={answers[q.id + '__note']} onChange={v => onAnswer({ id: q.id + '__note' }, v)} />
                   )}
