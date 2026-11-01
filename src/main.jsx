@@ -2,6 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
+import { installDateFormatter } from './date-format.js'
+installDateFormatter()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
