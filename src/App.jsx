@@ -49,28 +49,43 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
       return <textarea value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Your answer" className={INPUT} rows={4} style={SANS} />
 
     case 'single_choice':
-    case 'multiple_choice':
+    case 'multiple_choice': {
+      // An option called "Other" opens a box to say more. The answer is saved as "Other: what they typed" (or just "Other").
+      const otherSelected = value === 'Other' || (typeof value === 'string' && value.startsWith('Other: '))
+      const isSelected = opt => (opt === 'Other' ? otherSelected : value === opt)
+      const otherBox = (q.options || []).includes('Other') && otherSelected && (
+        <input type="text" value={value === 'Other' ? '' : String(value).slice(7)} placeholder="Please tell us more"
+          onChange={e => onChange(e.target.value.trim() ? 'Other: ' + e.target.value : 'Other')}
+          className={INPUT + ' mt-3'} style={SANS} />
+      )
       if (q.as_dropdown) {
         return (
-          <select value={value || ''} onChange={e => onChange(e.target.value)} className={INPUT} style={SANS}>
-            <option value="" disabled>Choose an option…</option>
-            {(q.options || []).map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-          </select>
+          <>
+            <select value={otherSelected ? 'Other' : (value || '')} onChange={e => onChange(e.target.value)} className={INPUT} style={SANS}>
+              <option value="" disabled>Choose an option…</option>
+              {(q.options || []).map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+            </select>
+            {otherBox}
+          </>
         )
       }
       return (
-        <div style={CHOICE_GRID}>
-          {(q.options || []).map((opt, i) => (
-            <button key={i} type="button" onClick={() => onChange(opt)}
-              className="flex items-center gap-2.5 text-left" style={SANS}>
-              <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${value === opt ? 'border-[#886c44]' : 'border-[#999]'}`}>
-                {value === opt && <span className="w-2 h-2 rounded-full bg-[#886c44]" />}
-              </span>
-              <span className="text-[15px] text-[#3a3226]">{opt}</span>
-            </button>
-          ))}
-        </div>
+        <>
+          <div style={CHOICE_GRID}>
+            {(q.options || []).map((opt, i) => (
+              <button key={i} type="button" onClick={() => onChange(opt === 'Other' && otherSelected ? value : opt)}
+                className="flex items-center gap-2.5 text-left" style={SANS}>
+                <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${isSelected(opt) ? 'border-[#886c44]' : 'border-[#999]'}`}>
+                  {isSelected(opt) && <span className="w-2 h-2 rounded-full bg-[#886c44]" />}
+                </span>
+                <span className="text-[15px] text-[#3a3226]">{opt}</span>
+              </button>
+            ))}
+          </div>
+          {otherBox}
+        </>
       )
+    }
 
     case 'checkboxes': {
       const arr = Array.isArray(value) ? value : []
@@ -151,7 +166,10 @@ function renderQuestionSummary(q, responses, getVal) {
     const opts = q.type === 'yes_no' ? ['Yes', 'No'] : (q.options || [])
     const counts = {}
     opts.forEach(o => { counts[o] = 0 })
-    vals.forEach(v => { if (counts[v] !== undefined) counts[v]++ })
+    vals.forEach(v => {
+      if (counts[v] !== undefined) counts[v]++
+      else if (typeof v === 'string' && v.startsWith('Other: ') && counts['Other'] !== undefined) counts['Other']++
+    })
     return (
       <>
         <p className="text-base font-bold text-[#2c2418] mb-4">{q.label}</p>
