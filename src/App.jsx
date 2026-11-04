@@ -86,18 +86,22 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
 
     case 'single_choice':
     case 'multiple_choice': {
-      // An option called "Other" opens a box to say more. The answer is saved as "Other: what they typed" (or just "Other").
-      const otherSelected = value === 'Other' || (typeof value === 'string' && value.startsWith('Other: '))
-      const isSelected = opt => (opt === 'Other' ? otherSelected : value === opt)
-      const otherBox = (q.options || []).includes('Other') && otherSelected && (
-        <input type="text" value={value === 'Other' ? '' : String(value).slice(7)} placeholder="Please tell us more"
-          onChange={e => onChange(e.target.value.trim() ? 'Other: ' + e.target.value : 'Other')}
+      // "Other" always opens a box to say more, and so does every answer to "How did you hear about us?" (optional there).
+      // The answer is saved as "Option: what they typed", or just "Option" when the box is left empty.
+      const hearQ = /hear about us/i.test(q.label || '')
+      const withDetail = o => o === 'Other' || hearQ
+      const chosen = (q.options || []).find(o => value === o || (withDetail(o) && typeof value === 'string' && value.startsWith(o + ': '))) || null
+      const isSelected = opt => chosen === opt
+      const detail = chosen && value !== chosen ? String(value).slice(chosen.length + 2) : ''
+      const otherBox = chosen && withDetail(chosen) && (
+        <input type="text" value={detail} placeholder={hearQ ? 'Where? (optional)' : 'Please tell us more'}
+          onChange={e => onChange(e.target.value.trim() ? chosen + ': ' + e.target.value : chosen)}
           className={INPUT + ' mt-3'} style={SANS} />
       )
       if (q.as_dropdown) {
         return (
           <>
-            <select value={otherSelected ? 'Other' : (value || '')} onChange={e => onChange(e.target.value)} className={INPUT} style={SANS}>
+            <select value={chosen || ''} onChange={e => onChange(e.target.value)} className={INPUT} style={SANS}>
               <option value="" disabled>Choose an option…</option>
               {(q.options || []).map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
             </select>
@@ -109,7 +113,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
         <>
           <div style={CHOICE_GRID}>
             {(q.options || []).map((opt, i) => (
-              <button key={i} type="button" onClick={() => onChange(opt === 'Other' && otherSelected ? value : opt)}
+              <button key={i} type="button" onClick={() => onChange(opt === chosen ? value : opt)}
                 className="flex items-center gap-2.5 text-left" style={SANS}>
                 <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${isSelected(opt) ? 'border-[#886c44]' : 'border-[#999]'}`}>
                   {isSelected(opt) && <span className="w-2 h-2 rounded-full bg-[#886c44]" />}
@@ -204,7 +208,7 @@ function renderQuestionSummary(q, responses, getVal) {
     opts.forEach(o => { counts[o] = 0 })
     vals.forEach(v => {
       if (counts[v] !== undefined) counts[v]++
-      else if (typeof v === 'string' && v.startsWith('Other: ') && counts['Other'] !== undefined) counts['Other']++
+      else if (typeof v === 'string') { const o = opts.find(x => v.startsWith(x + ': ')); if (o) counts[o]++ }
     })
     return (
       <>
