@@ -20,6 +20,42 @@ const CHOICE_GRID = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, m
 
 // ─── Form: Question input renderer ────────────────────────────────────────────
 
+// Month / day / year drop-downs in place of the browser's date box, so a year can't be mistyped (a form once came in as year 0007).
+// The answer is saved as YYYY-MM-DD, the same as before, and stays empty until all three are chosen.
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+function DateSelects({ value, onChange }) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '')
+  const [y, setY] = useState(m ? m[1] : '')
+  const [mo, setMo] = useState(m ? m[2] : '')
+  const [d, setD] = useState(m ? m[3] : '')
+  const thisYear = new Date().getFullYear()
+  const years = []
+  for (let i = thisYear - 2; i <= thisYear + 8; i++) years.push(String(i))
+  const daysIn = y && mo ? new Date(Number(y), Number(mo), 0).getDate() : 31
+  const update = (ny, nmo, nd) => {
+    const maxDay = ny && nmo ? new Date(Number(ny), Number(nmo), 0).getDate() : 31
+    if (nd && Number(nd) > maxDay) nd = ''
+    setY(ny); setMo(nmo); setD(nd)
+    onChange(ny && nmo && nd ? ny + '-' + nmo + '-' + nd : '')
+  }
+  return (
+    <div className="flex gap-2 flex-wrap">
+      <select aria-label="Month" value={mo} onChange={e => update(y, e.target.value, d)} className={INPUT.replace('w-full', 'min-w-0')} style={{ ...SANS, flex: '2 1 150px' }}>
+        <option value="">Month</option>
+        {MONTHS.map((name, i) => <option key={name} value={String(i + 1).padStart(2, '0')}>{name}</option>)}
+      </select>
+      <select aria-label="Day" value={d} onChange={e => update(y, mo, e.target.value)} className={INPUT.replace('w-full', 'min-w-0')} style={{ ...SANS, flex: '1 1 90px' }}>
+        <option value="">Day</option>
+        {Array.from({ length: daysIn }, (_, i) => String(i + 1).padStart(2, '0')).map(dd => <option key={dd} value={dd}>{Number(dd)}</option>)}
+      </select>
+      <select aria-label="Year" value={y} onChange={e => update(e.target.value, mo, d)} className={INPUT.replace('w-full', 'min-w-0')} style={{ ...SANS, flex: '1 1 110px' }}>
+        <option value="">Year</option>
+        {years.map(yy => <option key={yy} value={yy}>{yy}</option>)}
+      </select>
+    </div>
+  )
+}
+
 function QuestionInput({ question: q, value, onChange, errors = {} }) {
   switch (q.type) {
     case 'group':
@@ -132,7 +168,7 @@ function QuestionInput({ question: q, value, onChange, errors = {} }) {
       )
 
     case 'date':
-      return <input type="date" value={value || ''} onChange={e => onChange(e.target.value)} className={INPUT} style={SANS} />
+      return <DateSelects value={value} onChange={onChange} />
 
     default:
       return null
