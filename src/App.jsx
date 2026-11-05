@@ -454,6 +454,13 @@ function FormPage({ id }) {
   const [loading, setLoading]       = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors]         = useState({})
+  // A client sent this form by hand with a set price gets a link carrying ?send=<id>; their price and deposit are shown above the questions.
+  const [terms, setTerms]           = useState(null)
+  useEffect(() => {
+    const send = new URLSearchParams(window.location.search).get('send')
+    if (!send || !/^[0-9a-f-]{36}$/i.test(send)) return
+    supabase.rpc('prebooking_terms', { p_send: send }).then(({ data }) => { if (data && (data.price_cents || data.deposit_cents)) setTerms(data) })
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -522,6 +529,15 @@ function FormPage({ id }) {
             <p className="text-[15px] text-[#6b6152] mb-8 leading-relaxed" style={SANS}>{form.description}</p>
           )}
           {!form.description && <div className="mb-6" />}
+
+          {terms && !submitted && (
+            <div className="mb-8 px-6 py-5 bg-[#faf8f3] rounded-md border border-[#886c44]" style={SANS}>
+              <div className="text-[13px] font-bold uppercase tracking-wide text-[#886c44] mb-2">Your rental pricing</div>
+              {terms.price_cents ? <div className="text-[16px] text-[#2c2418]">Event price: <strong>{'$' + (terms.price_cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div> : null}
+              {terms.deposit_cents ? <div className="text-[16px] text-[#2c2418]">Refundable security deposit: <strong>{'$' + (terms.deposit_cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div> : null}
+              <div className="text-[13px] text-[#6b6152] mt-2">These amounts will be listed in your rental agreement.</div>
+            </div>
+          )}
 
           {submitted ? (
             <>
