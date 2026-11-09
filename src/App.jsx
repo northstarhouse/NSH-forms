@@ -590,11 +590,11 @@ function EventPage({ id }) {
   const [responses, setResponses] = useState([])
   const [slots, setSlots]     = useState([])
   const [signups, setSignups] = useState({})
-  // An invitation email opens this page with ?n=<their name> and ?r=<answer number> so the answer is already chosen; they still tap Submit.
-  const [name, setName]           = useState(() => (new URLSearchParams(window.location.search).get('n') || '').slice(0, 80))
+  // An invitation email can open this page with ?r=<answer number> so the answer is already chosen; they type their own name and tap Submit.
+  const [name, setName]           = useState('')
   const [rsvpChoice, setRsvpChoice] = useState('')
   // Events that ask "member or sponsor?" (vol_events.ask_affiliation). The invitation email can pre-fill both (?g= and ?o=).
-  const [affiliation, setAffiliation] = useState(() => { const g = new URLSearchParams(window.location.search).get('g'); return ['member', 'sponsor', 'guest'].includes(g) ? g : '' })
+  const [affiliation, setAffiliation] = useState(() => { const g = new URLSearchParams(window.location.search).get('g'); return ['member', 'sponsor'].includes(g) ? g : '' })
   const [organization, setOrganization] = useState(() => (new URLSearchParams(window.location.search).get('o') || '').slice(0, 120))
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -750,7 +750,7 @@ function EventPage({ id }) {
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-2">You are RSVPing as</label>
                     <div className="flex flex-wrap gap-3">
-                      {[['member', 'A member'], ['sponsor', 'A sponsor'], ['guest', 'A guest']].map(([val, label]) => (
+                      {[['member', 'Member'], ['sponsor', 'Sponsor']].map(([val, label]) => (
                         <button key={val} type="button" onClick={() => setAffiliation(val)}
                           className={`flex-1 min-w-[100px] py-2.5 px-4 rounded-sm text-sm font-semibold transition border-2 ${affiliation === val ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#ddd4c0] text-[#2c2418] hover:border-[#886c44]'}`}>{label}</button>
                       ))}
