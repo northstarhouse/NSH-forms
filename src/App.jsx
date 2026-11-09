@@ -590,7 +590,8 @@ function EventPage({ id }) {
   const [responses, setResponses] = useState([])
   const [slots, setSlots]     = useState([])
   const [signups, setSignups] = useState({})
-  const [name, setName]           = useState('')
+  // An invitation email opens this page with ?n=<their name> and ?r=<answer number> so the answer is already chosen; they still tap Submit.
+  const [name, setName]           = useState(() => (new URLSearchParams(window.location.search).get('n') || '').slice(0, 80))
   const [rsvpChoice, setRsvpChoice] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -603,6 +604,11 @@ function EventPage({ id }) {
     const { data: ev } = await supabase.from('vol_events').select('*').eq('id', id).single()
     if (!ev) { setLoading(false); return }
     setEvent(ev)
+    if (ev.event_type === 'rsvp') {
+      const pick = parseInt(new URLSearchParams(window.location.search).get('r') ?? '', 10)
+      const opts = ev.options?.length ? ev.options : ['Attending', 'Attending +1', "Can't Make It"]
+      if (Number.isInteger(pick) && opts[pick]) setRsvpChoice(opts[pick])
+    }
 
     if (ev.event_type === 'rsvp') {
       const { data: res } = await supabase.from('vol_event_responses').select('*').eq('event_id', id).order('created_at')
