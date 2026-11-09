@@ -593,6 +593,9 @@ function EventPage({ id }) {
   // An invitation email opens this page with ?n=<their name> and ?r=<answer number> so the answer is already chosen; they still tap Submit.
   const [name, setName]           = useState(() => (new URLSearchParams(window.location.search).get('n') || '').slice(0, 80))
   const [rsvpChoice, setRsvpChoice] = useState('')
+  // Events that ask "member or sponsor?" (vol_events.ask_affiliation). The invitation email can pre-fill both (?g= and ?o=).
+  const [affiliation, setAffiliation] = useState(() => { const g = new URLSearchParams(window.location.search).get('g'); return ['member', 'sponsor', 'guest'].includes(g) ? g : '' })
+  const [organization, setOrganization] = useState(() => (new URLSearchParams(window.location.search).get('o') || '').slice(0, 120))
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [signedSlot, setSignedSlot]   = useState(null)
@@ -643,9 +646,13 @@ function EventPage({ id }) {
 
   const handleRSVP = async () => {
     if (!name.trim() || !rsvpChoice || submitting) return
+    const ask = !!event.ask_affiliation
+    if (ask && (!affiliation || (affiliation === 'sponsor' && !organization.trim()))) return
     setSubmitting(true)
-    await supabase.from('vol_event_responses').insert({ event_id: id, name: name.trim(), response: rsvpChoice })
-    logActivity(`New RSVP on "${event.title}": ${name.trim()} — ${rsvpChoice}`, 'event_rsvp')
+    const row = { event_id: id, name: name.trim(), response: rsvpChoice }
+    if (ask) { row.affiliation = affiliation; row.organization = affiliation === 'sponsor' ? organization.trim() : null }
+    await supabase.from('vol_event_responses').insert(row)
+    logActivity(`New RSVP on "${event.title}": ${ask && affiliation === 'sponsor' ? organization.trim() + ' (' + name.trim() + ')' : name.trim()} — ${rsvpChoice}${ask && affiliation ? ' [' + affiliation + ']' : ''}`, 'event_rsvp')
     setSubmitting(false)
     setSubmitted(true)
   }
@@ -739,6 +746,21 @@ function EventPage({ id }) {
                     placeholder="Full name"
                     className="w-full px-4 py-3 border border-[#ddd4c0] rounded-sm text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
                 </div>
+                {event.ask_affiliation && (
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-widest text-[#a08060] mb-2">You are RSVPing as</label>
+                    <div className="flex flex-wrap gap-3">
+                      {[['member', 'A member'], ['sponsor', 'A sponsor'], ['guest', 'A guest']].map(([val, label]) => (
+                        <button key={val} type="button" onClick={() => setAffiliation(val)}
+                          className={`flex-1 min-w-[100px] py-2.5 px-4 rounded-sm text-sm font-semibold transition border-2 ${affiliation === val ? 'bg-[#886c44] border-[#886c44] text-white' : 'bg-white border-[#ddd4c0] text-[#2c2418] hover:border-[#886c44]'}`}>{label}</button>
+                      ))}
+                    </div>
+                    {affiliation === 'sponsor' && (
+                      <input type="text" value={organization} onChange={e => setOrganization(e.target.value)} placeholder="Organization name"
+                        className="mt-3 w-full px-4 py-3 border border-[#ddd4c0] rounded-sm text-base bg-[#faf7f2] focus:outline-none focus:border-[#886c44]" />
+                    )}
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-3">
                   {(event.options?.length ? event.options : ['Attending', 'Attending +1', "Can't Make It"]).map(opt => {
                     const active = rsvpChoice === opt
@@ -755,7 +777,7 @@ function EventPage({ id }) {
                     )
                   })}
                 </div>
-                <button onClick={handleRSVP} disabled={!name.trim() || !rsvpChoice || submitting}
+                <button onClick={handleRSVP} disabled={!name.trim() || !rsvpChoice || submitting || (!!event.ask_affiliation && (!affiliation || (affiliation === 'sponsor' && !organization.trim())))}
                   className="w-full py-3 px-4 bg-[#886c44] text-white rounded-sm text-sm font-semibold hover:bg-[#6d5436] transition disabled:opacity-40">
                   {submitting ? 'Submitting…' : 'Submit RSVP'}
                 </button>
